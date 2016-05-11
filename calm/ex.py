@@ -6,6 +6,7 @@ class CoreError(Exception):
 
 class ClientError(Exception):
     code = None
+    message = None
 
 
 class BadRequestError(ClientError):

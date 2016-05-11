@@ -3,7 +3,7 @@ from tornado.testing import AsyncHTTPTestCase
 
 from tests import CalmTestCase
 from calm import Application
-from calm.ex import CoreError
+from calm.ex import CoreError, MethodNotAllowedError
 
 
 app = Application()
@@ -33,6 +33,11 @@ async def default_handler(request, p1, p2, p3, p4,
 @app.get('/required_query_param')
 def required_query_param(request, query_param):
     pass
+
+
+@app.get('/blowup')
+def blow_things_up(request):
+    raise TypeError()
 
 
 class CoreTests(CalmTestCase):
@@ -112,4 +117,11 @@ class CoreTests(CalmTestCase):
 
     def test_method_not_allowed(self):
         self.post('/async/something',
-                  expected_code=405)
+                  expected_code=405,
+                  expected_json_body={
+                      'error': MethodNotAllowedError.message
+                  })
+
+    def test_server_error(self):
+        self.get('/blowup',
+                 expected_code=500)

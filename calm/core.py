@@ -1,3 +1,4 @@
+import json
 import re
 import inspect
 from collections import defaultdict
@@ -180,3 +181,28 @@ class MainHandler(RequestHandler):
 
     async def delete(self, **kwargs):
         await self._handle_request(self._delete_handler, **kwargs)
+
+    def write_error(self, status_code, exc_info=None, **kwargs):
+        if exc_info:
+            exc_type, exc_inst, _ = exc_info
+            if issubclass(exc_type, ClientError):
+                self._write_client_error(exc_inst)
+                return
+
+        self._write_server_error()
+
+    def _write_client_error(self, exc):
+        result = {
+            'error': exc.message or str(exc)
+        }
+
+        self.set_status(exc.code)
+        self.write(json.dumps(result))
+
+    def _write_server_error(self):
+        result = {
+            'error': 'Oops we messed up and work on fixing this!'
+        }
+
+        self.set_status(500)
+        self.write(json.dumps(result))
