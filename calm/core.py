@@ -2,13 +2,13 @@ import json
 import re
 import inspect
 from collections import defaultdict
-from itertools import repeat
 
 from tornado.web import Application, RequestHandler
 from tornado.web import MissingArgumentError
 
-from calm.ex import (CoreError, ClientError, BadRequestError,
+from calm.ex import (CoreError, ServerError, ClientError, BadRequestError,
                      MethodNotAllowedError)
+from calm.codec import CalmJSONEncoder
 
 
 class CalmApp(object):
@@ -153,22 +153,14 @@ class MainHandler(RequestHandler):
             raise MethodNotAllowedError()
 
         handler = handler_def['function']
-        try:
-            kwargs.update(self._get_query_params(handler_def))
-            if inspect.iscoroutinefunction(handler):
-                resp = await handler(self.request, **kwargs)
-            else:
-                # TODO: warn about blocking call
-                resp = handler(self.request, **kwargs)
+        kwargs.update(self._get_query_params(handler_def))
+        if inspect.iscoroutinefunction(handler):
+            resp = await handler(self.request, **kwargs)
+        else:
+            # TODO: warn about blocking call
+            resp = handler(self.request, **kwargs)
 
-            self.write(resp)
-        except TypeError as ex:
-            if 'argument' not in str(ex):
-                # If the TypeError is obviously not because of
-                # calling with wrong arguments, pass this up
-                raise
-
-            # TODO: list wrong arguments
+        self._write_response(resp)
 
     async def get(self, **kwargs):
         await self._handle_request(self._get_handler, **kwargs)
@@ -181,6 +173,30 @@ class MainHandler(RequestHandler):
 
     async def delete(self, **kwargs):
         await self._handle_request(self._delete_handler, **kwargs)
+
+    def _write_response(self, response):
+        if isinstance(response, dict):
+            result = response
+        elif isinstance(response,
+                        (str, list, tuple, set, int, float)):
+            result = {
+                'result': response
+            }
+        elif hasattr(response, '__json__'):
+            result = response.__json__()
+        else:
+            raise ServerError(
+                "Could not serialize '{}' to JSON".format(
+                    type(response).__name__
+                )
+            )
+
+        self._write_dict(result)
+
+    def _write_dict(self, response_dict):
+        result = json.dumps(response_dict, cls=CalmJSONEncoder)
+
+        self.write(result)
 
     def write_error(self, status_code, exc_info=None, **kwargs):
         if exc_info:

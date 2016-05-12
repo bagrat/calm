@@ -5,7 +5,12 @@ from tornado.testing import AsyncHTTPTestCase
 class CalmTestCase(AsyncHTTPTestCase):
     def _request(self, *args, **kwargs):
         expected_status_code = kwargs.pop('expected_code', 200)
-        expected_json_body = kwargs.pop('expected_json_body', None)
+        expected_result = kwargs.pop('expected_result', None)
+        if not expected_result:
+            expected_json_body = kwargs.pop('expected_json_body', None)
+        else:
+            expected_json_body = {'result': expected_result}
+
         if expected_json_body:
             expected_json_body = json.dumps(expected_json_body)
 
