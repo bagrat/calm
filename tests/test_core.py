@@ -1,6 +1,6 @@
-from tests import CalmTestCase
+from calm.testing import CalmTestCase
 from calm import Application
-from calm.ex import CoreError, MethodNotAllowedError
+from calm.ex import DefinitionError, MethodNotAllowedError
 
 
 app = Application()
@@ -53,6 +53,11 @@ def response_manipulations(request, rtype):
         return jsonable()
     else:
         return object()
+
+
+@app.get('/argtypes')
+def argument_types(request, arg1, arg2: int):
+    return arg1, arg2
 
 
 class CoreTests(CalmTestCase):
@@ -111,14 +116,14 @@ class CoreTests(CalmTestCase):
         async def missing_path_param(request):
             pass
 
-        self.assertRaises(CoreError,
+        self.assertRaises(DefinitionError,
                           app.delete('/missing_path_param/:param'),
                           missing_path_param)
 
         async def default_path_param(request, param='default'):
             pass
 
-        self.assertRaises(CoreError,
+        self.assertRaises(DefinitionError,
                           app.delete('/default_path_param/:param'),
                           default_path_param)
 
@@ -152,3 +157,12 @@ class CoreTests(CalmTestCase):
 
         self.delete('/response/error',
                     expected_code=500)
+
+    def test_argument_types(self):
+        args = {'arg1': 'something', 'arg2': 1234}
+        expected = [args['arg1'], args['arg2']]
+
+        self.get('/argtypes',
+                 query_params=args,
+                 expected_code=200,
+                 expected_result=expected)

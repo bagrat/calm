@@ -1,8 +1,9 @@
 from unittest import TestCase
 from datetime import datetime
 import json
-from calm.codec import CalmJSONEncoder, CalmJSONDecoder
 import pytz
+
+from calm.codec import CalmJSONEncoder, CalmJSONDecoder, ArgumentParser
 
 
 class CodecTests(TestCase):
@@ -23,5 +24,23 @@ class CodecTests(TestCase):
 
         encoded = json.dumps(expected, cls=CalmJSONEncoder)
         actual = json.loads(encoded, cls=CalmJSONDecoder)
+
+        self.assertEqual(expected, actual)
+
+    def test_argument_parser(self):
+        class MyArgParser(ArgumentParser):
+            @property
+            def parsers(self):
+                return {
+                    int: self.my_int_parser
+                }
+
+            def my_int_parser(self, value):
+                return value + 1
+
+        parser = MyArgParser()
+
+        expected = 567
+        actual = parser.parse(int, expected - 1)
 
         self.assertEqual(expected, actual)

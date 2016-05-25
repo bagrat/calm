@@ -1,18 +1,22 @@
 import json
 import re
 import inspect
+import datetime
 from collections import defaultdict
 
 from tornado.web import Application, RequestHandler
 from tornado.web import MissingArgumentError
 
-from calm.ex import (CoreError, ServerError, ClientError, BadRequestError,
-                     MethodNotAllowedError)
-from calm.codec import CalmJSONEncoder
+from calm.ex import (DefinitionError, ServerError, ClientError,
+                     BadRequestError, MethodNotAllowedError)
+from calm.codec import CalmJSONEncoder, ArgumentParser
 
 
 class CalmApp(object):
     URI_REGEX = re.compile(':([^\/\?:]*)')
+    config = {
+        'argument_parser': ArgumentParser
+    }
 
     def __init__(self):
         super(CalmApp, self).__init__()
@@ -24,8 +28,13 @@ class CalmApp(object):
         route_defs = []
 
         for uri, methods in self._route_map.items():
+            init_params = {
+                **methods,
+                'argument_parser': self.config.get('argument_parser',
+                                                   ArgumentParser)
+            }
             route_defs.append(
-                (uri, MainHandler, methods)
+                (uri, MainHandler, init_params)
             )
 
         self._app = Application(route_defs)
@@ -53,9 +62,9 @@ class CalmApp(object):
         # Get the arguments specification of the
         # decorated function to make appropriate
         # checks
-        argspec = inspect.getargspec(function)
+        argspec = inspect.getfullargspec(function)
         all_args = argspec.args[1:]
-        has_kwargs = argspec.keywords
+        has_kwargs = argspec.varkw
         default_count = len(argspec.defaults or [])
         if default_count:
             required_args = all_args[-default_count]
@@ -68,7 +77,7 @@ class CalmApp(object):
         optional_path_params = set(
             path_params).intersection(optional_args)
         if optional_path_params:
-            raise CoreError(
+            raise DefinitionError(
                 "Path Parameters {} must not be optional in '{}'".format(
                     list(optional_args),
                     function.__name__
@@ -78,7 +87,7 @@ class CalmApp(object):
         if not has_kwargs and not set(path_params).issubset(required_args):
             missing_path_params = set(
                 path_params).difference(required_args)
-            raise CoreError(
+            raise DefinitionError(
                 "Path Parameters {} must be expected by '{}'".format(
                     list(missing_path_params),
                     function.__name__
@@ -125,11 +134,15 @@ class CalmApp(object):
 
 
 class MainHandler(RequestHandler):
+    BUILTIN_TYPES = (str, list, tuple, set, int, float, datetime.datetime)
+
     def __init__(self, *args, **kwargs):
         self._get_handler = kwargs.pop('get', None)
         self._post_handler = kwargs.pop('post', None)
         self._put_handler = kwargs.pop('put', None)
         self._delete_handler = kwargs.pop('delete', None)
+
+        self._argument_parser = kwargs.pop('argument_parser')()
 
         super(MainHandler, self).__init__(*args, **kwargs)
 
@@ -148,12 +161,24 @@ class MainHandler(RequestHandler):
 
         return query_params
 
+    def _cast_args(self, handler, args):
+        arg_types = handler.__annotations__
+        for arg in args:
+            arg_type = arg_types.get(arg)
+
+            if not arg_type:
+                continue
+
+            # TODO: implement argument converter
+            args[arg] = self._argument_parser.parse(arg_type, args[arg])
+
     async def _handle_request(self, handler_def, **kwargs):
         if not handler_def:
             raise MethodNotAllowedError()
 
         handler = handler_def['function']
         kwargs.update(self._get_query_params(handler_def))
+        self._cast_args(handler, kwargs)
         if inspect.iscoroutinefunction(handler):
             resp = await handler(self.request, **kwargs)
         else:
@@ -175,15 +200,14 @@ class MainHandler(RequestHandler):
         await self._handle_request(self._delete_handler, **kwargs)
 
     def _write_response(self, response):
-        if isinstance(response, dict):
+        if hasattr(response, '__json__'):
+            result = response.__json__()
+        elif isinstance(response, dict):
             result = response
-        elif isinstance(response,
-                        (str, list, tuple, set, int, float)):
+        elif isinstance(response, self.BUILTIN_TYPES):
             result = {
                 'result': response
             }
-        elif hasattr(response, '__json__'):
-            result = response.__json__()
         else:
             raise ServerError(
                 "Could not serialize '{}' to JSON".format(
@@ -217,7 +241,7 @@ class MainHandler(RequestHandler):
 
     def _write_server_error(self):
         result = {
-            'error': 'Oops we messed up and work on fixing this!'
+            'error': 'Oops our bad. We work on fixing this!'
         }
 
         self.set_status(500)

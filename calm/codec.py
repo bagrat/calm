@@ -2,6 +2,8 @@ import json
 from datetime import datetime
 import iso8601
 
+from calm.ex import DefinitionError
+
 
 class CalmJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -32,3 +34,25 @@ class CalmJSONDecoder(json.JSONDecoder):
             return parsed
         else:
             return parsed
+
+
+class ArgumentParser(object):
+    BASE_PARSERS = {
+        int: int
+    }
+    parsers = {}
+
+    def __init__(self):
+        super(ArgumentParser, self).__init__()
+
+        self._parsers = {**self.BASE_PARSERS, **self.parsers}
+
+    def parse(self, arg_type, value):
+        if arg_type not in self._parsers:
+            raise DefinitionError(
+                "Argument parser for '{}' is not defined".format(
+                    arg_type
+                )
+            )
+
+        return self._parsers[arg_type](value)

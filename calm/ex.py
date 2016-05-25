@@ -1,10 +1,10 @@
 
 
-class CoreError(Exception):
+class CalmError(Exception):
     pass
 
 
-class ClientError(Exception):
+class ClientError(CalmError):
     code = None
     message = None
 
@@ -18,5 +18,9 @@ class MethodNotAllowedError(ClientError):
     message = "Method not allowed"
 
 
-class ServerError(Exception):
+class ServerError(CalmError):
+    pass
+
+
+class DefinitionError(ServerError):
     pass
