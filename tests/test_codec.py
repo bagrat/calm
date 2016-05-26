@@ -4,6 +4,7 @@ import json
 import pytz
 
 from calm.codec import CalmJSONEncoder, CalmJSONDecoder, ArgumentParser
+from calm.ex import DefinitionError
 
 
 class CodecTests(TestCase):
@@ -27,6 +28,10 @@ class CodecTests(TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_codec_wrong(self):
+        self.assertRaises(json.JSONDecodeError, json.loads, "not json",
+                          cls=CalmJSONDecoder)
+
     def test_argument_parser(self):
         class MyArgParser(ArgumentParser):
             @property
@@ -44,3 +49,4 @@ class CodecTests(TestCase):
         actual = parser.parse(int, expected - 1)
 
         self.assertEqual(expected, actual)
+        self.assertRaises(DefinitionError, parser.parse, str, "nvm")

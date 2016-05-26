@@ -1,3 +1,7 @@
+from datetime import datetime
+
+import pytz
+
 from calm.testing import CalmTestCase
 from calm import Application
 from calm.ex import DefinitionError, MethodNotAllowedError
@@ -58,6 +62,11 @@ def response_manipulations(request, rtype):
 @app.get('/argtypes')
 def argument_types(request, arg1, arg2: int):
     return arg1, arg2
+
+
+@app.post('/json/body')
+def json_body(request):
+    return request.body
 
 
 class CoreTests(CalmTestCase):
@@ -135,7 +144,9 @@ class CoreTests(CalmTestCase):
         self.post('/async/something',
                   expected_code=405,
                   expected_json_body={
-                      'error': MethodNotAllowedError.message
+                      self.get_calm_app().config[
+                          'error_key'
+                      ]: MethodNotAllowedError.message
                   })
 
     def test_server_error(self):
@@ -171,3 +182,48 @@ class CoreTests(CalmTestCase):
         self.get('/argtypes',
                  query_params=args,
                  expected_code=400)
+
+    def test_json_body(self):
+        expected = {
+            'date': datetime(2001, 2, 3, 4, 5, 6, 7, tzinfo=pytz.utc),
+            'list': [
+                'hello',
+                datetime(2003, 4, 5, 6, 7, 8, 9, tzinfo=pytz.utc),
+                'world'
+            ],
+            'dict': {
+                'subdoc': 5,
+                'subdate': datetime(2002, 3, 4, 5, 6, 7, 8, tzinfo=pytz.utc)
+            },
+            'something': 'else'
+        }
+        self.post('/json/body',
+                  json_body=expected,
+                  expected_code=200,
+                  expected_json_body=expected)
+
+        self.post('/json/body',
+                  body='definitely not json',
+                  expected_code=400)
+
+    def test_configure(self):
+        app = self.get_calm_app()
+        old_config = app.config
+        app.configure(
+            plain_result_key='prk',
+            error_key='pardon'
+        )
+
+        self.get('/async/something',
+                 expected_code=200,
+                 expected_json_body={
+                    'prk': 'something'
+                 })
+
+        self.post('/async/something',
+                  expected_code=405,
+                  expected_json_body={
+                     'pardon': str(MethodNotAllowedError.message)
+                  })
+
+        app.configure(**old_config)

@@ -2,6 +2,7 @@ import json
 
 from tornado.testing import AsyncHTTPTestCase
 
+from calm.codec import CalmJSONDecoder, CalmJSONEncoder
 from calm.core import CalmApp
 
 
@@ -19,19 +20,18 @@ class CalmTestCase(AsyncHTTPTestCase):
 
         return calm_app.make_app()
 
-    def _request(self, url, *args, **kwargs):
-        expected_status_code = kwargs.pop('expected_code', 200)
-
+    def _request(self, url, *args,
+                 expected_code=200, json_body=None,
+                 **kwargs):
         expected_result = kwargs.pop('expected_result', None)
         if expected_result:
-            expected_json_body = {'result': expected_result}
+            expected_json_body = {
+                self.get_calm_app().config['plain_result_key']: expected_result
+            }
         else:
             expected_json_body = kwargs.pop('expected_json_body', None)
 
-        if expected_json_body:
-            expected_json_body = json.dumps(expected_json_body)
-
-        expected_body = kwargs.pop('expected_body', expected_json_body)
+        expected_body = kwargs.pop('expected_body', None)
 
         query_params = kwargs.pop('query_params', {})
         query_string = '&'.join(
@@ -40,12 +40,31 @@ class CalmTestCase(AsyncHTTPTestCase):
         if query_string:
             url = url + '?' + query_string
 
+        if ((kwargs.get('body') or json_body) and
+                kwargs['method'] not in ('POST', 'PUT')):
+            raise Exception(
+                "Cannot send body with methods other than POST and PUT"
+            )
+
+        if not kwargs.get('body'):
+            if kwargs['method'] in ('POST', 'PUT'):
+                if json_body:
+                    kwargs['body'] = json.dumps(json_body, cls=CalmJSONEncoder)
+                else:
+                    kwargs['body'] = '{}'
+
         resp = self.fetch(url, *args, **kwargs)
 
-        actual_status_code = resp.code
-        self.assertEqual(actual_status_code, expected_status_code)
+        actual_code = resp.code
+        self.assertEqual(actual_code, expected_code)
+
         if expected_body:
             self.assertEqual(resp.body.decode('utf-8'), expected_body)
+
+        if expected_json_body:
+            actual_json_body = json.loads(resp.body.decode('utf-8'),
+                                          cls=CalmJSONDecoder)
+            self.assertEqual(expected_json_body, actual_json_body)
 
         return resp
 
@@ -55,12 +74,10 @@ class CalmTestCase(AsyncHTTPTestCase):
 
     def post(self, url, *args, **kwargs):
         kwargs.update(method='POST')
-        kwargs['body'] = kwargs.pop('body', None) or '{}'
         return self._request(url, *args, **kwargs)
 
     def put(self, url, *args, **kwargs):
         kwargs.update(method='PUT')
-        kwargs['body'] = kwargs.pop('body', None) or '{}'
         return self._request(url, *args, **kwargs)
 
     def delete(self, url, *args, **kwargs):

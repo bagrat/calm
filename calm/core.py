@@ -9,14 +9,16 @@ from tornado.web import MissingArgumentError
 
 from calm.ex import (DefinitionError, ServerError, ClientError,
                      BadRequestError, MethodNotAllowedError)
-from calm.codec import CalmJSONEncoder, ArgumentParser
+from calm.codec import CalmJSONEncoder, CalmJSONDecoder, ArgumentParser
 from calm.service import CalmService
 
 
 class CalmApp(object):
     URI_REGEX = re.compile(':([^\/\?:]*)')
     config = {
-        'argument_parser': ArgumentParser
+        'argument_parser': ArgumentParser,
+        'plain_result_key': 'result',
+        'error_key': 'error'
     }
 
     def __init__(self):
@@ -35,7 +37,8 @@ class CalmApp(object):
             init_params = {
                 **methods,
                 'argument_parser': self.config.get('argument_parser',
-                                                   ArgumentParser)
+                                                   ArgumentParser),
+                'app': self
             }
             route_defs.append(
                 (uri, MainHandler, init_params)
@@ -150,6 +153,7 @@ class MainHandler(RequestHandler):
         self._delete_handler = kwargs.pop('delete', None)
 
         self._argument_parser = kwargs.pop('argument_parser')()
+        self._app = kwargs.pop('app', None)
 
         super(MainHandler, self).__init__(*args, **kwargs)
 
@@ -178,6 +182,17 @@ class MainHandler(RequestHandler):
 
             args[arg] = self._argument_parser.parse(arg_type, args[arg])
 
+    def _parse_and_update_body(self, request):
+        if request.body:
+            try:
+                json_body = json.loads(request.body.decode('utf-8'),
+                                       cls=CalmJSONDecoder)
+                request.body = json_body
+            except json.JSONDecodeError:
+                raise BadRequestError(
+                    "Malformed request body. JSON is expected."
+                )
+
     async def _handle_request(self, handler_def, **kwargs):
         if not handler_def:
             raise MethodNotAllowedError()
@@ -185,6 +200,7 @@ class MainHandler(RequestHandler):
         handler = handler_def['function']
         kwargs.update(self._get_query_params(handler_def))
         self._cast_args(handler, kwargs)
+        self._parse_and_update_body(self.request)
         if inspect.iscoroutinefunction(handler):
             resp = await handler(self.request, **kwargs)
         else:
@@ -212,7 +228,7 @@ class MainHandler(RequestHandler):
             result = response
         elif isinstance(response, self.BUILTIN_TYPES):
             result = {
-                'result': response
+                self._app.config['plain_result_key']: response
             }
         else:
             raise ServerError(
@@ -239,7 +255,7 @@ class MainHandler(RequestHandler):
 
     def _write_client_error(self, exc):
         result = {
-            'error': exc.message or str(exc)
+            self._app.config['error_key']: exc.message or str(exc)
         }
 
         self.set_status(exc.code)
@@ -247,7 +263,8 @@ class MainHandler(RequestHandler):
 
     def _write_server_error(self):
         result = {
-            'error': 'Oops our bad. We are working to fix this!'
+            self._app.config['error_key']: 'Oops our bad.'
+                                           'We are working to fix this!'
         }
 
         self.set_status(500)
