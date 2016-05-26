@@ -37,7 +37,7 @@ class CalmApp(object):
         * make_app - compiles the Calm application and returns a Tornado
                      Application instance
     """
-    URI_REGEX = re.compile(':([^\/\?:]*)')
+    URI_REGEX = re.compile(r':([^\/\?:]*)')
     config = {  # The default configuration
         'argument_parser': ArgumentParser,
         'plain_result_key': 'result',
@@ -100,7 +100,7 @@ class CalmApp(object):
         for path_param in path_params:
             uri = uri.replace(
                 ':{}'.format(path_param),
-                '(?P<{}>[^\/\?]*)'.format(path_param)
+                r'(?P<{}>[^\/\?]*)'.format(path_param)
             )
         regex = re.compile(uri)
         path_params = list(regex.groupindex.keys())
@@ -108,6 +108,7 @@ class CalmApp(object):
         # Get the arguments specification of the
         # decorated function to make appropriate
         # checks
+        # TODO: switch to using `inspect.signature()`
         argspec = inspect.getfullargspec(function)
         all_args = argspec.args[1:]
         has_kwargs = argspec.varkw
@@ -227,15 +228,15 @@ class MainHandler(RequestHandler):
     def _get_query_params(self, handler_def):
         """Retreives the values for query arguments."""
         query_params = {}
-        for qp in handler_def['all_query_params']:
+        for qparam in handler_def['all_query_params']:
             try:
-                query_params[qp] = self.get_query_argument(qp)
+                query_params[qparam] = self.get_query_argument(qparam)
             except MissingArgumentError:
-                if qp not in handler_def['required_query_params']:
+                if qparam not in handler_def['required_query_params']:
                     continue
 
                 raise BadRequestError(
-                    "Missing required query param '{}'".format(qp)
+                    "Missing required query param '{}'".format(qparam)
                 )
 
         return query_params
@@ -251,13 +252,13 @@ class MainHandler(RequestHandler):
 
             args[arg] = self._argument_parser.parse(arg_type, args[arg])
 
-    def _parse_and_update_body(self, request):
+    def _parse_and_update_body(self):
         """Parses the request body to JSON."""
-        if request.body:
+        if self.request.body:
             try:
-                json_body = json.loads(request.body.decode('utf-8'),
+                json_body = json.loads(self.request.body.decode('utf-8'),
                                        cls=CalmJSONDecoder)
-                request.body = json_body
+                self.request.body = json_body
             except json.JSONDecodeError:
                 raise BadRequestError(
                     "Malformed request body. JSON is expected."
@@ -271,7 +272,7 @@ class MainHandler(RequestHandler):
         handler = handler_def['function']
         kwargs.update(self._get_query_params(handler_def))
         self._cast_args(handler, kwargs)
-        self._parse_and_update_body(self.request)
+        self._parse_and_update_body()
         if inspect.iscoroutinefunction(handler):
             resp = await handler(self.request, **kwargs)
         else:

@@ -35,14 +35,14 @@ class CalmJSONEncoder(json.JSONEncoder):
 class CalmJSONDecoder(json.JSONDecoder):
     """Custom JSON decoder that supports `datetime` deserialization."""
 
-    def decode(self, s):
+    def decode(self, s, *args, **kwargs):
         """
         Extends `json.JSONDecoder.decode` to decode ISO-8601 strings.
 
         This method deserializes a string into json, by converting all ISO-8601
         strings to `datetime` objects.
         """
-        parsed = super(CalmJSONDecoder, self).decode(s)
+        parsed = super(CalmJSONDecoder, self).decode(s, *args, **kwargs)
         return self._parse_date(parsed)
 
     def _parse_date(self, obj):
@@ -61,8 +61,8 @@ class CalmJSONDecoder(json.JSONDecoder):
         elif isinstance(obj, list):
             return [self._parse_date(s) for s in obj]
         elif isinstance(obj, dict):
-            for k, v in obj.items():
-                obj[k] = self._parse_date(v)
+            for key, value in obj.items():
+                obj[key] = self._parse_date(value)
 
             return obj
         else:
@@ -136,7 +136,8 @@ class ArgumentParser(object):
 
         return self._parsers[arg_type](value)
 
-    def parse_int(self, value):
+    @classmethod
+    def parse_int(cls, value):
         """Parses a base 10 string to `int` object."""
         try:
             return int(value)
