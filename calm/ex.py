@@ -13,6 +13,10 @@ class BadRequestError(ClientError):
     code = 400
 
 
+class ArgumentParseError(BadRequestError):
+    pass
+
+
 class MethodNotAllowedError(ClientError):
     code = 405
     message = "Method not allowed"

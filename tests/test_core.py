@@ -61,9 +61,9 @@ def argument_types(request, arg1, arg2: int):
 
 
 class CoreTests(CalmTestCase):
-    def get_app(self):
+    def get_calm_app(self):
         global app
-        return app.make_app()
+        return app
 
     def test_sync_async(self):
         async_expected = 'async_result'
@@ -166,3 +166,8 @@ class CoreTests(CalmTestCase):
                  query_params=args,
                  expected_code=200,
                  expected_result=expected)
+
+        args['arg2'] = "NotANumber"
+        self.get('/argtypes',
+                 query_params=args,
+                 expected_code=400)

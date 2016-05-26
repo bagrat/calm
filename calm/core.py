@@ -10,6 +10,7 @@ from tornado.web import MissingArgumentError
 from calm.ex import (DefinitionError, ServerError, ClientError,
                      BadRequestError, MethodNotAllowedError)
 from calm.codec import CalmJSONEncoder, ArgumentParser
+from calm.service import CalmService
 
 
 class CalmApp(object):
@@ -23,6 +24,9 @@ class CalmApp(object):
 
         self._app = None
         self._route_map = defaultdict(dict)
+
+    def configure(self, **kwargs):
+        self.config.update(kwargs)
 
     def make_app(self):
         route_defs = []
@@ -132,6 +136,9 @@ class CalmApp(object):
     def put(self, *uri, **kwargs):
         return self._decorator("PUT", *uri, **kwargs)
 
+    def service(self, url):
+        return CalmService(self, url)
+
 
 class MainHandler(RequestHandler):
     BUILTIN_TYPES = (str, list, tuple, set, int, float, datetime.datetime)
@@ -169,7 +176,6 @@ class MainHandler(RequestHandler):
             if not arg_type:
                 continue
 
-            # TODO: implement argument converter
             args[arg] = self._argument_parser.parse(arg_type, args[arg])
 
     async def _handle_request(self, handler_def, **kwargs):
@@ -241,7 +247,7 @@ class MainHandler(RequestHandler):
 
     def _write_server_error(self):
         result = {
-            'error': 'Oops our bad. We work on fixing this!'
+            'error': 'Oops our bad. We are working to fix this!'
         }
 
         self.set_status(500)

@@ -1,8 +1,24 @@
 import json
+
 from tornado.testing import AsyncHTTPTestCase
+
+from calm.core import CalmApp
 
 
 class CalmTestCase(AsyncHTTPTestCase):
+    def get_calm_app(self):
+        pass
+
+    def get_app(self):
+        calm_app = self.get_calm_app()
+
+        if calm_app is None or not isinstance(calm_app, CalmApp):
+            raise NotImplementedError(
+                "Please implement CalmTestCase.get_calm_app()"
+            )
+
+        return calm_app.make_app()
+
     def _request(self, url, *args, **kwargs):
         expected_status_code = kwargs.pop('expected_code', 200)
 
