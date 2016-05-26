@@ -14,26 +14,25 @@ class CalmJSONEncoder(json.JSONEncoder):
 
 
 class CalmJSONDecoder(json.JSONDecoder):
-    def decode(self, obj):
-        try:
-            parsed = super(CalmJSONDecoder, self).decode(obj)
-        except (json.decoder.JSONDecodeError, TypeError):
-            parsed = obj
+    def decode(self, s):
+        parsed = super(CalmJSONDecoder, self).decode(s)
+        return self._parse_date(parsed)
 
-        if isinstance(parsed, str):
+    def _parse_date(self, obj):
+        if isinstance(obj, str):
             try:
                 return iso8601.parse_date(obj)
             except (iso8601.ParseError, TypeError):
-                return parsed
-        elif isinstance(parsed, list):
-            return [self.decode(s) for s in parsed]
-        elif isinstance(parsed, dict):
-            for k, v in parsed.items():
-                parsed[k] = self.decode(v)
+                return obj
+        elif isinstance(obj, list):
+            return [self._parse_date(s) for s in obj]
+        elif isinstance(obj, dict):
+            for k, v in obj.items():
+                obj[k] = self._parse_date(v)
 
-            return parsed
+            return obj
         else:
-            return parsed
+            return obj
 
 
 class ArgumentParser(object):
