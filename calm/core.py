@@ -1,3 +1,6 @@
+"""
+Here lies the core of Calm.
+"""
 import json
 import re
 import inspect
@@ -12,10 +15,30 @@ from calm.ex import (DefinitionError, ServerError, ClientError,
 from calm.codec import CalmJSONEncoder, CalmJSONDecoder, ArgumentParser
 from calm.service import CalmService
 
+__all__ = ['CalmApp']
+
 
 class CalmApp(object):
+    """
+    This class defines the Calm Application.
+
+    Starts using calm by initializing an instance of this class. Afterwards,
+    the application is being defined by calling its instance methods,
+    decorators on your user-defined handlers.
+
+    Public Methods:
+        * configure - use this method to tweak some configuration parameter
+                      of a Calm Application
+        * get, post, put, delete - appropriate HTTP method decorators.
+                                   The user defined handlers should be
+                                   decorated by these decorators specifying
+                                   the URL
+        * service - creates a new Service using provided URL prefix
+        * make_app - compiles the Calm application and returns a Tornado
+                     Application instance
+    """
     URI_REGEX = re.compile(':([^\/\?:]*)')
-    config = {
+    config = {  # The default configuration
         'argument_parser': ArgumentParser,
         'plain_result_key': 'result',
         'error_key': 'error'
@@ -28,9 +51,15 @@ class CalmApp(object):
         self._route_map = defaultdict(dict)
 
     def configure(self, **kwargs):
+        """
+        Configures the Calm Application.
+
+        Use this method to customize the Calm Application to your needs.
+        """
         self.config.update(kwargs)
 
     def make_app(self):
+        """Compiles and returns a Tornado Application instance."""
         route_defs = []
 
         for uri, methods in self._route_map.items():
@@ -49,6 +78,16 @@ class CalmApp(object):
         return self._app
 
     def _add_route(self, http_method, function, *uri, **kwargs):
+        """
+        Maps a function to a specific URL and HTTP method.
+
+        Arguments:
+            * http_method - the HTTP method to map to
+            * function - the handler function to be mapped to URL and method
+            * uri - a list of URL fragments. This is used as a tuple for easy
+                    implementation of the Service notion.
+        """
+        # TODO: split this function into smaller parts
         # Join the uri fragments
         uri = '/'.join(
             u.strip('/') for u in uri
@@ -121,6 +160,12 @@ class CalmApp(object):
         self._route_map[uri][http_method.lower()] = handler_def
 
     def _decorator(self, http_method, *uri, **kwargs):
+        """
+        A generic HTTP method decorator.
+
+        This method simply stores all the mapping information needed, and
+        returns the original function.
+        """
         def wrapper(function):
             self._add_route(http_method, function, *uri, **kwargs)
             return function
@@ -128,25 +173,47 @@ class CalmApp(object):
         return wrapper
 
     def get(self, *uri, **kwargs):
+        """Define GET handler for `uri`"""
         return self._decorator("GET", *uri, **kwargs)
 
     def post(self, *uri, **kwargs):
+        """Define POST handler for `uri`"""
         return self._decorator("POST", *uri, **kwargs)
 
     def delete(self, *uri, **kwargs):
+        """Define DELETE handler for `uri`"""
         return self._decorator("DELETE", *uri, **kwargs)
 
     def put(self, *uri, **kwargs):
+        """Define PUT handler for `uri`"""
         return self._decorator("PUT", *uri, **kwargs)
 
     def service(self, url):
+        """Returns a Service defined by the `url` prefix"""
         return CalmService(self, url)
 
 
 class MainHandler(RequestHandler):
+    """
+    The main dispatcher request handler.
+
+    This class extends the Tornado `RequestHandler` class, and it is mapped to
+    all the defined applications handlers handlers. This class implements all
+    HTTP method handlers, which dispatch the control to the appropriate user
+    handlers based on their definitions and request itself.
+    """
     BUILTIN_TYPES = (str, list, tuple, set, int, float, datetime.datetime)
 
     def __init__(self, *args, **kwargs):
+        """
+        Initializes the dispatcher request handler.
+
+        Arguments:
+            * get, post, put, delete - appropriate HTTP method handler for
+                                       a specific URI
+            * argument_parser - a `calm.ArgumentParser` subclass
+            * app - the Calm application
+        """
         self._get_handler = kwargs.pop('get', None)
         self._post_handler = kwargs.pop('post', None)
         self._put_handler = kwargs.pop('put', None)
@@ -158,6 +225,7 @@ class MainHandler(RequestHandler):
         super(MainHandler, self).__init__(*args, **kwargs)
 
     def _get_query_params(self, handler_def):
+        """Retreives the values for query arguments."""
         query_params = {}
         for qp in handler_def['all_query_params']:
             try:
@@ -173,6 +241,7 @@ class MainHandler(RequestHandler):
         return query_params
 
     def _cast_args(self, handler, args):
+        """Converts the request arguments to appropriate types."""
         arg_types = handler.__annotations__
         for arg in args:
             arg_type = arg_types.get(arg)
@@ -183,6 +252,7 @@ class MainHandler(RequestHandler):
             args[arg] = self._argument_parser.parse(arg_type, args[arg])
 
     def _parse_and_update_body(self, request):
+        """Parses the request body to JSON."""
         if request.body:
             try:
                 json_body = json.loads(request.body.decode('utf-8'),
@@ -194,6 +264,7 @@ class MainHandler(RequestHandler):
                 )
 
     async def _handle_request(self, handler_def, **kwargs):
+        """A generic HTTP method handler."""
         if not handler_def:
             raise MethodNotAllowedError()
 
@@ -210,18 +281,23 @@ class MainHandler(RequestHandler):
         self._write_response(resp)
 
     async def get(self, **kwargs):
+        """The HTTP GET handler."""
         await self._handle_request(self._get_handler, **kwargs)
 
     async def post(self, **kwargs):
+        """The HTTP POST handler."""
         await self._handle_request(self._post_handler, **kwargs)
 
     async def put(self, **kwargs):
+        """The HTTP PUT handler."""
         await self._handle_request(self._put_handler, **kwargs)
 
     async def delete(self, **kwargs):
+        """The HTTP DELETE handler."""
         await self._handle_request(self._delete_handler, **kwargs)
 
     def _write_response(self, response):
+        """Converts various types to JSON and returns to the client"""
         if hasattr(response, '__json__'):
             result = response.__json__()
         elif isinstance(response, dict):
@@ -240,11 +316,13 @@ class MainHandler(RequestHandler):
         self._write_dict(result)
 
     def _write_dict(self, response_dict):
+        """Converts a `dict` object to JSON string and returns to the client"""
         result = json.dumps(response_dict, cls=CalmJSONEncoder)
 
         self.write(result)
 
     def write_error(self, status_code, exc_info=None, **kwargs):
+        """The top function for writing errors"""
         if exc_info:
             exc_type, exc_inst, _ = exc_info
             if issubclass(exc_type, ClientError):
@@ -254,6 +332,7 @@ class MainHandler(RequestHandler):
         self._write_server_error()
 
     def _write_client_error(self, exc):
+        """Formats and returns a client error to the client"""
         result = {
             self._app.config['error_key']: exc.message or str(exc)
         }
@@ -262,6 +341,7 @@ class MainHandler(RequestHandler):
         self.write(json.dumps(result))
 
     def _write_server_error(self):
+        """Formats and returns a server error to the client"""
         result = {
             self._app.config['error_key']: 'Oops our bad.'
                                            'We are working to fix this!'
