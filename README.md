@@ -13,6 +13,8 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/n9code/calm/master/LICENSE)
 [![Gitter](https://badges.gitter.im/n9code/calm.svg)](https://gitter.im/n9code/calm?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
+## Introduction
+
 Calm is an extension to Tornado Framework that provides decorators and other
 tools to easily implement RESTful APIs. The purpose of Calm is to ease the
 process of defining your API, parsing argument values in the request handlers,
@@ -56,7 +58,7 @@ my_service = app.service('/my_service')
 # (or `post`, `put`, `delete`), with Service you use the same named methods of
 # the Service instance
 @my_service.post('/body_demo')
-def body_demo(request):
+async def body_demo(request):
     """
     The request body is automatically parsed to a dict.
 
@@ -72,7 +74,7 @@ def body_demo(request):
 
 
 @my_service.get('/args_demo/:number')
-def args_demo(request, number: int, arg1: int, arg2='arg2_default'):
+async def args_demo(request, number: int, arg1: int, arg2='arg2_default'):
     """
     You can specify types for your request arguments.
 
