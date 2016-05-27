@@ -4,8 +4,8 @@
     <img src="https://raw.githubusercontent.com/n9code/calm/master/docs/logo/calm-logo.png"
          alt="Calm Logo"
          align="right"
-         width=50
-         height=50 />
+         width=70
+         height=70 />
 </a>
 [![Build Status](https://travis-ci.org/n9code/calm.svg?branch=master)](https://travis-ci.org/n9code/calm)
 [![Coverage Status](https://coveralls.io/repos/github/n9code/calm/badge.svg?branch=master)](https://coveralls.io/github/n9code/calm?branch=master)
