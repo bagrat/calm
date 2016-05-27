@@ -116,7 +116,7 @@ class ArgumentParser(object):
     def __init__(self):
         super(ArgumentParser, self).__init__()
 
-        self._parsers = {**self._base_parsers, **self.parsers}
+        self._parsers = {**self._base_parsers, **self.parsers}  # noqa
 
     @property
     def _base_parsers(self):

@@ -64,7 +64,7 @@ class CalmApp(object):
 
         for uri, methods in self._route_map.items():
             init_params = {
-                **methods,
+                **methods,  # noqa
                 'argument_parser': self.config.get('argument_parser',
                                                    ArgumentParser),
                 'app': self
