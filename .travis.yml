@@ -8,7 +8,13 @@ script:
     - "scripts/run-tests.sh"
 after_success:
   - "coveralls"
-
 branches:
   only:
     - master
+notifications:
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/988d1033da1413747904
+    on_success: change
+    on_failure: always
+    on_start: never
