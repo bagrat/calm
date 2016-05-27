@@ -114,7 +114,7 @@ class CalmApp(object):
         has_kwargs = argspec.varkw
         default_count = len(argspec.defaults or [])
         if default_count:
-            required_args = all_args[-default_count]
+            required_args = all_args[:-default_count]
             optional_args = all_args[-default_count:]
         else:
             required_args = all_args
