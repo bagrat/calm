@@ -26,4 +26,4 @@ For more information see `README.md`.
 from calm.core import CalmApp as Application
 
 __all__ = ['Application']
-__version__ = 0.1
+__version__ = '0.1.4'

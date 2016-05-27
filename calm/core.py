@@ -344,7 +344,7 @@ class MainHandler(RequestHandler):
     def _write_server_error(self):
         """Formats and returns a server error to the client"""
         result = {
-            self._app.config['error_key']: 'Oops our bad.'
+            self._app.config['error_key']: 'Oops our bad. '
                                            'We are working to fix this!'
         }
 

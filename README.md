@@ -7,11 +7,12 @@
          width=70
          height=70 />
 </a>
+[![PyPI](https://img.shields.io/pypi/v/calm.svg)](https://pypi.python.org/pypi/calm)
 [![Build Status](https://travis-ci.org/n9code/calm.svg?branch=master)](https://travis-ci.org/n9code/calm)
 [![Coverage Status](https://coveralls.io/repos/github/n9code/calm/badge.svg?branch=master)](https://coveralls.io/github/n9code/calm?branch=master)
 [![Code Health](https://landscape.io/github/n9code/calm/master/landscape.svg?style=flat)](https://landscape.io/github/n9code/calm/master)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/n9code/calm/master/LICENSE)
 [![Gitter](https://badges.gitter.im/n9code/calm.svg)](https://gitter.im/n9code/calm?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/n9code/calm/master/LICENSE)
 
 ## Introduction
 
@@ -19,6 +20,16 @@ Calm is an extension to Tornado Framework that provides decorators and other
 tools to easily implement RESTful APIs. The purpose of Calm is to ease the
 process of defining your API, parsing argument values in the request handlers,
 etc.
+
+### Installation
+
+Calm installation process is dead simple with `pip`:
+
+```
+$ pip install calm
+```
+
+*Note: Calm works only with Python 3.5*
 
 ## Let's code!
 
@@ -95,20 +106,31 @@ async def args_demo(request, number: int, arg1: int, arg2='arg2_default'):
 
 If you followed the comments in the example, then we are ready to play with it!
 
+First let us see how Calm treats request and response bodies:
+
 ```
 $ curl -X POST --data '{"key": "value"}' 'localhost:8888/my_service/body_demo'
 {"result": "value"}
+
 $ curl -X POST --data '{"another_key": "value"}' 'localhost:8888/my_service/body_demo'
-{"error": "Oops our bad.We are working to fix this!"}
+{"error": "Oops our bad. We are working to fix this!"}
+
 $ curl -X POST --data 'This is not JSON' 'localhost:8888/my_service/body_demo'
 {"error": "Malformed request body. JSON is expected."}
+```
 
+Now it's time to observe some request argument magic!
+
+```
 $ curl 'localhost:8888/my_service/args_demo/0'
 {"error": "Missing required query param 'arg1'"}
+
 $ curl 'localhost:8888/my_service/args_demo/0?arg1=12'
 {"type(arg1)": "<class 'int'>", "type(number)": "<class 'int'>", "arg2": "arg2_default"}
+
 $ curl 'localhost:8888/my_service/args_demo/0?arg1=not_a_number'
 {"error": "Bad value for integer: not_a_number"}
+
 $ curl 'localhost:8888/my_service/args_demo/0?arg1=12&arg2=hello'
 {"type(arg1)": "<class 'int'>", "type(number)": "<class 'int'>", "arg2": "hello"}
 ```
