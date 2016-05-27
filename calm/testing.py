@@ -1,3 +1,5 @@
+
+
 import json
 
 from tornado.testing import AsyncHTTPTestCase
@@ -8,13 +10,13 @@ from calm.core import CalmApp
 
 class CalmTestCase(AsyncHTTPTestCase):
     def get_calm_app(self):
-        pass
+        pass  # pragma: no cover
 
     def get_app(self):
         calm_app = self.get_calm_app()
 
         if calm_app is None or not isinstance(calm_app, CalmApp):
-            raise NotImplementedError(
+            raise NotImplementedError(  # pragma: no cover
                 "Please implement CalmTestCase.get_calm_app()"
             )
 
@@ -42,7 +44,7 @@ class CalmTestCase(AsyncHTTPTestCase):
 
         if ((kwargs.get('body') or json_body) and
                 kwargs['method'] not in ('POST', 'PUT')):
-            raise Exception(
+            raise Exception(  # pragma: no cover
                 "Cannot send body with methods other than POST and PUT"
             )
 
@@ -59,7 +61,7 @@ class CalmTestCase(AsyncHTTPTestCase):
         self.assertEqual(actual_code, expected_code)
 
         if expected_body:
-            self.assertEqual(resp.body.decode('utf-8'), expected_body)
+            self.assertEqual(resp.body.decode('utf-8'), expected_body)  # pragma: no cover
 
         if expected_json_body:
             actual_json_body = json.loads(resp.body.decode('utf-8'),
