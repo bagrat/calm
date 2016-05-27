@@ -1,5 +1,11 @@
 # Calm
 
+[![Build Status](https://travis-ci.org/n9code/calm.svg?branch=master)](https://travis-ci.org/n9code/calm)
+[![Coverage Status](https://coveralls.io/repos/github/n9code/calm/badge.svg?branch=master)](https://coveralls.io/github/n9code/calm?branch=master)
+[![Code Health](https://landscape.io/github/n9code/calm/master/landscape.svg?style=flat)](https://landscape.io/github/n9code/calm/master)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/n9code/calm/master/LICENSE)
+[![Gitter](https://badges.gitter.im/n9code/calm.svg)](https://gitter.im/n9code/calm?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 Calm is an extension to Tornado Framework that provides decorators and other
 tools to easily implement RESTful APIs. The purpose of Calm is to ease the
 process of defining your API, parsing argument values in the request handlers,
