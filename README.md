@@ -41,6 +41,74 @@ tornado.ioloop.IOLoop.current().start()
 Now go ahead and try your new application! Navigate to
 `http://localhost:8888/hello/YOUR_NAME_HERE` and see what you get.
 
+Now that you built your first Calm RESTful API, let us dive deeper and see more
+features of Calm. Go ahead and add the following code to your first application.
+
+```
+# Calm had the notion of a Service. A Service is nothig more than a URL prefix for
+# a group of endpoints.
+my_service = app.service('/my_service')
+
+
+# So when usually you would define your handler with `@app.get`
+# (or `post`, `put`, `delete`), with Service you use the same named methods of
+# the Service instance
+@my_service.post('/body_demo')
+def body_demo(request):
+    """
+    The request body is automatically parsed to a dict.
+
+    If the request body is not a valid JSON, `400` HTTP error is returned.
+
+    When the handler returns not a `dict` object, the return value is nested
+    into a JSON, e.g.:
+
+        {"result": YOUR_RETURN_VALUE}
+
+    """
+    return request.body['key']
+
+
+@my_service.get('/args_demo/:number')
+def args_demo(request, number: int, arg1: int, arg2='arg2_default'):
+    """
+    You can specify types for your request arguments.
+
+    When specified, Calm will parse the arguments to the appropriate type. When
+    there is an error parsing the value, `400` HTTP error is returned.
+
+    Any function parameters that do not appear as path arguments, are
+    considered query arguments. If a default value is assigned for a query
+    arguemnt it is considered optional. And finally if not all required query
+    arguments are passed, `400` HTTP error is returned.
+    """
+    return {
+        'type(number)': str(type(number)),
+        'type(arg1)': str(type(arg1)),
+        'arg2': arg2
+    }
+```
+
+If you followed the comments in the example, then we are ready to play with it!
+
+```
+$ curl -X POST --data '{"key": "value"}' 'localhost:8888/my_service/body_demo'
+{"result": "value"}
+$ curl -X POST --data '{"another_key": "value"}' 'localhost:8888/my_service/body_demo'
+{"error": "Oops our bad.We are working to fix this!"}
+$ curl -X POST --data 'This is not JSON' 'localhost:8888/my_service/body_demo'
+{"error": "Malformed request body. JSON is expected."}
+
+$ curl 'localhost:8888/my_service/args_demo/0'
+{"error": "Missing required query param 'arg1'"}
+$ curl 'localhost:8888/my_service/args_demo/0?arg1=12'
+{"type(arg1)": "<class 'int'>", "type(number)": "<class 'int'>", "arg2": "arg2_default"}
+$ curl 'localhost:8888/my_service/args_demo/0?arg1=not_a_number'
+{"error": "Bad value for integer: not_a_number"}
+$ curl 'localhost:8888/my_service/args_demo/0?arg1=12&arg2=hello'
+{"type(arg1)": "<class 'int'>", "type(number)": "<class 'int'>", "arg2": "hello"}
+```
+
 ## Contributions
 
 Calm loves Pull Requests and welcomes any contribution be it an issue,
