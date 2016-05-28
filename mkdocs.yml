@@ -4,6 +4,7 @@ pages:
 - Introduction: intro.md
 theme: cosmo
 site_dir: docs/.site
+include_next_prev: False
 
 extra:
   extra.include_toc: True
