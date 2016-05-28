@@ -7,7 +7,6 @@ install:
 script:
     - "scripts/run-tests.sh"
 after_success:
-  - "coveralls"
   - "codeclimate-test-reporter"
 branches:
   only:
