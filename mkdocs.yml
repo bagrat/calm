@@ -1,4 +1,5 @@
 site_name: Calm
+site_favicon: ./logo/calm-logo.png
 pages:
 - Home: index.md
 - Introduction: intro.md
