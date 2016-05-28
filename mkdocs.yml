@@ -1,0 +1,9 @@
+site_name: Calm
+pages:
+- Home: index.md
+- Introduction: intro.md
+theme: cosmo
+site_dir: docs/.site
+
+extra:
+  extra.include_toc: True
