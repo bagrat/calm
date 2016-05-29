@@ -2,12 +2,12 @@
     "docs": [
         {
             "location": "/",
-            "text": "Calm\n\n\nCalm is a REST API building extension for Tornado.",
+            "text": "Calm\n\n\nIt is always Calm before a Tornado!",
             "title": "Home"
         },
         {
             "location": "/#calm",
-            "text": "Calm is a REST API building extension for Tornado.",
+            "text": "It is always Calm before a Tornado!",
             "title": "Calm"
         },
         {
