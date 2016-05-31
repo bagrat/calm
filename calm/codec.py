@@ -15,6 +15,8 @@ import iso8601
 
 from calm.ex import DefinitionError, ArgumentParseError
 
+__all__ = ['CalmJSONEncoder', 'CalmJSONDecoder', 'ArgumentParser']
+
 
 class CalmJSONEncoder(json.JSONEncoder):
     """Custom JSON encoder that supports `datetime` serialization."""
