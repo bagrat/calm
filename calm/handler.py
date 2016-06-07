@@ -91,7 +91,7 @@ class MainHandler(RequestHandler):
                     "Malformed request body. JSON is expected."
                 )
 
-    async def _handle_request(self, handler_def, **kwargs):
+    async def _handle_request(self, handler_def, **kwargs):  # noqa
         """A generic HTTP method handler."""
         if not handler_def:
             raise MethodNotAllowedError()
@@ -108,19 +108,19 @@ class MainHandler(RequestHandler):
 
         self._write_response(resp)
 
-    async def get(self, **kwargs):
+    async def get(self, **kwargs):  # noqa
         """The HTTP GET handler."""
         await self._handle_request(self._get_handler, **kwargs)
 
-    async def post(self, **kwargs):
+    async def post(self, **kwargs):  # noqa
         """The HTTP POST handler."""
         await self._handle_request(self._post_handler, **kwargs)
 
-    async def put(self, **kwargs):
+    async def put(self, **kwargs):  # noqa
         """The HTTP PUT handler."""
         await self._handle_request(self._put_handler, **kwargs)
 
-    async def delete(self, **kwargs):
+    async def delete(self, **kwargs):  # noqa
         """The HTTP DELETE handler."""
         await self._handle_request(self._delete_handler, **kwargs)
 
@@ -187,5 +187,5 @@ class DefaultHandler(MainHandler):
     It implements the `_handle_request` method and raises `NotFoundError` which
     will be returned to the user as an appropriate JSON message.
     """
-    def _handle_request(self, *_, **dummy):
+    async def _handle_request(self, *_, **dummy):  # noqa
         raise NotFoundError()
