@@ -9,6 +9,7 @@ Classes:
 """
 import json
 import inspect
+import logging
 import datetime
 
 from tornado.web import RequestHandler
@@ -49,6 +50,8 @@ class MainHandler(RequestHandler):
 
         self._argument_parser = kwargs.pop('argument_parser')()
         self._app = kwargs.pop('app', None)
+
+        self.log = logging.getLogger('calm')
 
         super(MainHandler, self).__init__(*args, **kwargs)
 
@@ -103,7 +106,7 @@ class MainHandler(RequestHandler):
         if inspect.iscoroutinefunction(handler):
             resp = await handler(self.request, **kwargs)
         else:
-            # TODO: warn about blocking call
+            self.log.warning("'%s' is not a coroutine!", handler_def.handler)
             resp = handler(self.request, **kwargs)
 
         self._write_response(resp)

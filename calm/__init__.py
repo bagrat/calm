@@ -23,7 +23,11 @@ assigns URIs to them. Here is a basic example:
 
 For more information see `README.md`.
 """
+import logging
+
 from calm.core import CalmApp as Application  # noqa
 from calm.codec import ArgumentParser  # noqa
+
+logging.getLogger('calm').addHandler(logging.NullHandler())
 
 __version__ = '0.1.4'
