@@ -3,10 +3,13 @@ Here lies the core of Calm.
 """
 import re
 import inspect
+from functools import wraps
 from inspect import Parameter
 from collections import defaultdict
 
 from tornado.web import Application
+from tornado.websocket import WebSocketHandler
+from tornado import ioloop
 
 from calm.ex import DefinitionError
 from calm.codec import ArgumentParser
@@ -47,6 +50,7 @@ class CalmApp(object):
 
         self._app = None
         self._route_map = defaultdict(dict)
+        self._ws_map = {}
 
     def configure(self, **kwargs):
         """
@@ -74,6 +78,11 @@ class CalmApp(object):
 
             route_defs.append(
                 (uri, MainHandler, init_params)
+            )
+
+        for uri, handler in self._ws_map.items():
+            route_defs.append(
+                (uri, handler)
             )
 
         self._app = Application(route_defs,
@@ -140,6 +149,26 @@ class CalmApp(object):
     def put(self, *uri):
         """Define PUT handler for `uri`"""
         return self._decorator("PUT", *uri)
+
+    def websocket(self, *uri_fragments):
+        """Define a WebSocket handler for `uri`"""
+        def decor(klass):
+            """Takes a record of the WebSocket class and returns it."""
+            if not isinstance(klass, type):
+                raise DefinitionError("A WebSocket handler should be a class")
+            elif not issubclass(klass, WebSocketHandler):
+                name = getattr(klass, '__name__', 'WebSocket handler')
+                raise DefinitionError(
+                    "{} should subclass '{}'".format(name,
+                                                     WebSocketHandler.__name__)
+                )
+
+            uri = self._normalize_uri(*uri_fragments)
+            self._ws_map[uri] = klass
+
+            return klass
+
+        return decor
 
     def service(self, url):
         """Returns a Service defined by the `url` prefix"""

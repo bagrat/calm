@@ -7,14 +7,17 @@ test your Calm applications more conveniently and with less code.
 import json
 
 from tornado.testing import AsyncHTTPTestCase
+from tornado.websocket import websocket_connect
 
 from calm.codec import CalmJSONDecoder, CalmJSONEncoder
 from calm.core import CalmApp
 
 
-class CalmTestCase(AsyncHTTPTestCase):
+class CalmHTTPTestCase(AsyncHTTPTestCase):
     """
     This is the base class to inherit in order to test your Calm app.
+
+    You may use this to test only the HTTP part of your application.
     """
     def get_calm_app(self):
         """
@@ -112,3 +115,37 @@ class CalmTestCase(AsyncHTTPTestCase):
         """Makes a `DELETE` request to the `url` of your app."""
         kwargs.update(method='DELETE')
         return self._request(url, *args, **kwargs)
+
+
+class CalmWebSocketTestCase(AsyncHTTPTestCase):
+    """
+    This is the base class to inherit in order to test your WS handlers.
+    """
+    def get_calm_app(self):
+        """
+        This method needs to be implemented by the user.
+
+        Simply return an instance of your Calm application so that Calm will
+        know what are you testing.
+        """
+        pass  # pragma: no cover
+
+    def get_app(self):
+        """This one is for Tornado, returns the app under test."""
+        calm_app = self.get_calm_app()
+
+        if calm_app is None or not isinstance(calm_app, CalmApp):
+            raise NotImplementedError(  # pragma: no cover
+                "Please implement CalmTestCase.get_calm_app()"
+            )
+
+        return calm_app.make_app()
+
+    async def init_websocket(self, url):
+        """Initiate a new WebSocket connection."""
+        self._websocket = await websocket_connect(self.get_url(url))
+        return self._websocket
+
+    def get_protocol(self):
+        """Override for `get_url` to return with schema `ws://`"""
+        return 'ws'

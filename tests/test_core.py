@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytz
 
-from calm.testing import CalmTestCase
+from calm.testing import CalmHTTPTestCase
 from calm import Application
 from calm.ex import DefinitionError, MethodNotAllowedError, NotFoundError
 
@@ -69,7 +69,7 @@ def json_body(request):
     return request.body
 
 
-class CoreTests(CalmTestCase):
+class CoreTests(CalmHTTPTestCase):
     def get_calm_app(self):
         global app
         return app

@@ -1,4 +1,4 @@
-from calm.testing import CalmTestCase
+from calm.testing import CalmHTTPTestCase
 from calm import Application
 
 
@@ -32,7 +32,7 @@ def applevel(request, retparam):
     return retparam
 
 
-class CalmServiceTests(CalmTestCase):
+class CalmServiceTests(CalmHTTPTestCase):
     def get_calm_app(self):
         global app
         return app
