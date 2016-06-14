@@ -111,7 +111,7 @@ class CalmApp(object):
         uri = self._normalize_uri(*uri_fragments)
         self._route_map[uri][http_method.lower()] = HandlerDef(uri, function)
 
-    def _decorator(self, http_method, *uri, **kwargs):
+    def _decorator(self, http_method, *uri):
         """
         A generic HTTP method decorator.
 
@@ -120,7 +120,7 @@ class CalmApp(object):
         """
         def wrapper(function):
             """Takes a record of the function and returns it."""
-            self._add_route(http_method, function, *uri, **kwargs)
+            self._add_route(http_method, function, *uri)
             return function
 
         return wrapper
