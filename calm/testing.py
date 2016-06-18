@@ -121,6 +121,11 @@ class CalmWebSocketTestCase(AsyncHTTPTestCase):
     """
     This is the base class to inherit in order to test your WS handlers.
     """
+    def __init__(self, *args, **kwargs):
+        super(CalmWebSocketTestCase, self).__init__(*args, **kwargs)
+
+        self._websocket = None
+
     def get_calm_app(self):
         """
         This method needs to be implemented by the user.

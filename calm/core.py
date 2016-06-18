@@ -3,13 +3,11 @@ Here lies the core of Calm.
 """
 import re
 import inspect
-from functools import wraps
 from inspect import Parameter
 from collections import defaultdict
 
 from tornado.web import Application
 from tornado.websocket import WebSocketHandler
-from tornado import ioloop
 
 from calm.ex import DefinitionError
 from calm.codec import ArgumentParser
