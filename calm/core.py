@@ -131,7 +131,8 @@ class CalmApp(object):
 
         return uri
 
-    def _add_route(self, http_method, function, *uri_fragments):
+    def _add_route(self, http_method, function, *uri_fragments,
+                   consumes=None, produces=None):
         """
         Maps a function to a specific URL and HTTP method.
 
@@ -140,11 +141,22 @@ class CalmApp(object):
             * function - the handler function to be mapped to URL and method
             * uri - a list of URL fragments. This is used as a tuple for easy
                     implementation of the Service notion.
+            * consumes - a Resource type of what the operation consumes
+            * produces - a Resource type of what the operation produces
         """
         uri = self._normalize_uri(*uri_fragments)
-        self._route_map[uri][http_method.lower()] = HandlerDef(uri, function)
+        handler_def = HandlerDef(uri, function)
 
-    def _decorator(self, http_method, *uri):
+        consumes = getattr(function, 'consumes', consumes)
+        produces = getattr(function, 'produces', produces)
+        handler_def.consumes = consumes
+        handler_def.produces = produces
+
+        function.handler_def = handler_def
+        self._route_map[uri][http_method.lower()] = handler_def
+
+    def _decorator(self, http_method, *uri,
+                   consumes=None, produces=None):
         """
         A generic HTTP method decorator.
 
@@ -153,26 +165,31 @@ class CalmApp(object):
         """
         def wrapper(function):
             """Takes a record of the function and returns it."""
-            self._add_route(http_method, function, *uri)
+            self._add_route(http_method, function, *uri,
+                            consumes=consumes, produces=produces)
             return function
 
         return wrapper
 
-    def get(self, *uri):
+    def get(self, *uri, consumes=None, produces=None):
         """Define GET handler for `uri`"""
-        return self._decorator("GET", *uri)
+        return self._decorator("GET", *uri,
+                               consumes=consumes, produces=produces)
 
-    def post(self, *uri):
+    def post(self, *uri, consumes=None, produces=None):
         """Define POST handler for `uri`"""
-        return self._decorator("POST", *uri)
+        return self._decorator("POST", *uri,
+                               consumes=consumes, produces=produces)
 
-    def delete(self, *uri):
+    def delete(self, *uri, consumes=None, produces=None):
         """Define DELETE handler for `uri`"""
-        return self._decorator("DELETE", *uri)
+        return self._decorator("DELETE", *uri,
+                               consumes=consumes, produces=produces)
 
-    def put(self, *uri):
+    def put(self, *uri, consumes=None, produces=None):
         """Define PUT handler for `uri`"""
-        return self._decorator("PUT", *uri)
+        return self._decorator("PUT", *uri,
+                               consumes=consumes, produces=produces)
 
     def websocket(self, *uri_fragments):
         """Define a WebSocket handler for `uri`"""
@@ -222,6 +239,9 @@ class HandlerDef(object):
 
         self.path_args = []
         self.query_args = {}
+
+        self.consumes = None
+        self.produces = None
 
         self._extract_arguments()
 

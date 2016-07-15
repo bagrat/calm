@@ -16,7 +16,6 @@ class CalmService(object):
     is called, with the service prefix. This class simply redefines the HTTP
     method decorators by prepending the Service prefix to the handler URL.
     """
-
     def __init__(self, app, url):
         """
         Initializes a Calm Service.
