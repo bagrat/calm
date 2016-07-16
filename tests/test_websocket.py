@@ -6,7 +6,7 @@ from calm import Application
 from calm.ex import DefinitionError
 
 
-app = Application()
+app = Application('testws', '1')
 
 
 @app.websocket('/ws')

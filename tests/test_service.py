@@ -2,7 +2,7 @@ from calm.testing import CalmHTTPTestCase
 from calm import Application
 
 
-app = Application()
+app = Application('testapp', '1')
 service1 = app.service('/service1')
 service2 = app.service('/service2')
 
@@ -40,20 +40,20 @@ class CalmServiceTests(CalmHTTPTestCase):
     def test_service(self):
         self.get('/service1/url1/something',
                  expected_code=200,
-                 expected_result='something')
+                 expected_json_body='something')
 
         self.put('/service1/url2/something',
                  expected_code=200,
-                 expected_result='something')
+                 expected_json_body='something')
 
         self.post('/service2/url1/something',
                   expected_code=200,
-                  expected_result='something')
+                  expected_json_body='something')
 
         self.delete('/service2/url2/something',
                     expected_code=200,
-                    expected_result='something')
+                    expected_json_body='something')
 
         self.delete('/applevel/something',
                     expected_code=200,
-                    expected_result='something')
+                    expected_json_body='something')

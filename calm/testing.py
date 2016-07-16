@@ -9,7 +9,6 @@ import json
 from tornado.testing import AsyncHTTPTestCase
 from tornado.websocket import websocket_connect
 
-from calm.codec import CalmJSONDecoder, CalmJSONEncoder
 from calm.core import CalmApp
 
 
@@ -42,7 +41,6 @@ class CalmHTTPTestCase(AsyncHTTPTestCase):
     def _request(self, url, *args,
                  expected_code=200,
                  expected_body=None,
-                 expected_result=None,
                  expected_json_body=None,
                  query_args=None,
                  json_body=None,
@@ -50,12 +48,6 @@ class CalmHTTPTestCase(AsyncHTTPTestCase):
         """
         Makes a request to the `url` of the app and makes assertions.
         """
-        if expected_result:
-            # use expected_json_body further on
-            expected_json_body = {
-                self.get_calm_app().config['plain_result_key']: expected_result
-            }
-
         # generate the query fragment of the URL
         if query_args is None:
             query_string = ''
@@ -76,7 +68,7 @@ class CalmHTTPTestCase(AsyncHTTPTestCase):
         if not kwargs.get('body'):
             if kwargs['method'] in ('POST', 'PUT'):
                 if json_body:
-                    kwargs['body'] = json.dumps(json_body, cls=CalmJSONEncoder)
+                    kwargs['body'] = json.dumps(json_body)
                 else:
                     kwargs['body'] = '{}'
 
@@ -90,8 +82,7 @@ class CalmHTTPTestCase(AsyncHTTPTestCase):
                              expected_body)  # pragma: no cover
 
         if expected_json_body:
-            actual_json_body = json.loads(resp.body.decode('utf-8'),
-                                          cls=CalmJSONDecoder)
+            actual_json_body = json.loads(resp.body.decode('utf-8'))
             self.assertEqual(expected_json_body, actual_json_body)
 
         return resp

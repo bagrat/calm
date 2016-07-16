@@ -39,17 +39,55 @@ class CalmApp(object):
     URI_REGEX = re.compile(r':([^\/\?:]*)')
     config = {  # The default configuration
         'argument_parser': ArgumentParser,
-        'plain_result_key': 'result',
         'error_key': 'error'
     }
 
-    def __init__(self):
+    def __init__(self, name, version, *,
+                 host=None, base_path=None,
+                 description='', tos=''):
         super(CalmApp, self).__init__()
 
         self._app = None
         self._route_map = defaultdict(dict)
         self._custom_handlers = []
         self._ws_map = {}
+
+        self.name = name
+        self.version = version
+        self.description = description
+        self.tos = tos
+        self.license = None
+        self.contact = None
+        self.host = host
+        self.base_path = base_path
+
+    def set_licence(self, name, url):
+        """
+        Set a License information for the API.
+
+        Arguments:
+            * name - The license name used for the API.
+            * url - A URL to the license used for the API.
+        """
+        self.license = {
+            'name': name,
+            'url': url
+        }
+
+    def set_contact(self, name, url, email):
+        """
+        Set a contact information for the API.
+
+        Arguments:
+            * name - The identifying name of the contact person/organization.
+            * url - The URL pointing to the contact information.
+            * email - The email address of the contact person/organization.
+        """
+        self.contact = {
+            'name': name,
+            'url': url,
+            'email': email
+        }
 
     def configure(self, **kwargs):
         """

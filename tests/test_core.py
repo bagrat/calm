@@ -1,6 +1,3 @@
-from datetime import datetime
-
-import pytz
 from tornado.web import RequestHandler
 
 from calm.testing import CalmHTTPTestCase
@@ -8,7 +5,7 @@ from calm import Application
 from calm.ex import DefinitionError, MethodNotAllowedError, NotFoundError
 
 
-app = Application()
+app = Application('testapp', '1')
 
 
 @app.get('/async/:param')
@@ -89,16 +86,16 @@ class CoreTests(CalmHTTPTestCase):
         sync_expected = 'sync_result'
 
         self.get('/async/{}'.format(async_expected),
-                 expected_result=async_expected)
+                 expected_json_body=async_expected)
 
         self.post('/sync/{}'.format(sync_expected),
-                  expected_result=sync_expected)
+                  expected_json_body=sync_expected)
 
     def test_uri_fragments(self):
-        expected = 'expected_result'
+        expected = 'expected_json_body'
 
         self.get('/part1/part2/?retparam={}'.format(expected),
-                 expected_result=expected)
+                 expected_json_body=expected)
 
     def test_default(self):
         p_values = {
@@ -109,7 +106,7 @@ class CoreTests(CalmHTTPTestCase):
         self.put('/default?{}'.format(
                 '&'.join(['='.join(kv) for kv in p_values.items()])
             ),
-            expected_result=''.join(
+            expected_json_body=''.join(
                     sorted(
                         [v for v in p_values.values()] + ['p8', 'p9']
                     )
@@ -124,7 +121,7 @@ class CoreTests(CalmHTTPTestCase):
         self.put('/default?{}'.format(
                 '&'.join(['='.join(kv) for kv in p_values.items()])
             ),
-            expected_result=''.join(
+            expected_json_body=''.join(
                 sorted(
                     [v for v in p_values.values()] + ['p9']
                 )
@@ -174,10 +171,10 @@ class CoreTests(CalmHTTPTestCase):
 
     def test_response_manipulations(self):
         self.delete('/response/str',
-                    expected_result='test_result')
+                    expected_json_body='test_result')
 
         self.delete('/response/list',
-                    expected_result=["test", "result"])
+                    expected_json_body=["test", "result"])
 
         self.delete('/response/dict',
                     expected_json_body={"test": "result"})
@@ -195,7 +192,7 @@ class CoreTests(CalmHTTPTestCase):
         self.get('/argtypes',
                  query_args=args,
                  expected_code=200,
-                 expected_result=expected)
+                 expected_json_body=expected)
 
         args['arg2'] = "NotANumber"
         self.get('/argtypes',
@@ -204,15 +201,12 @@ class CoreTests(CalmHTTPTestCase):
 
     def test_json_body(self):
         expected = {
-            'date': datetime(2001, 2, 3, 4, 5, 6, 7, tzinfo=pytz.utc),
             'list': [
                 'hello',
-                datetime(2003, 4, 5, 6, 7, 8, 9, tzinfo=pytz.utc),
                 'world'
             ],
             'dict': {
                 'subdoc': 5,
-                'subdate': datetime(2002, 3, 4, 5, 6, 7, 8, tzinfo=pytz.utc)
             },
             'something': 'else'
         }
@@ -229,15 +223,8 @@ class CoreTests(CalmHTTPTestCase):
         app = self.get_calm_app()
         old_config = app.config
         app.configure(
-            plain_result_key='prk',
             error_key='pardon'
         )
-
-        self.get('/async/something',
-                 expected_code=200,
-                 expected_json_body={
-                    'prk': 'something'
-                 })
 
         self.post('/async/something',
                   expected_code=405,

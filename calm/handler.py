@@ -17,7 +17,6 @@ from tornado.web import MissingArgumentError
 
 from calm.ex import (ServerError, ClientError, BadRequestError,
                      MethodNotAllowedError, NotFoundError)
-from calm.codec import CalmJSONEncoder, CalmJSONDecoder
 
 __all__ = ['MainHandler', 'DefaultHandler']
 
@@ -86,8 +85,7 @@ class MainHandler(RequestHandler):
         """Parses the request body to JSON."""
         if self.request.body:
             try:
-                json_body = json.loads(self.request.body.decode('utf-8'),
-                                       cls=CalmJSONDecoder)
+                json_body = json.loads(self.request.body.decode('utf-8'))
                 self.request.body = json_body
             except json.JSONDecodeError:
                 raise BadRequestError(
@@ -131,26 +129,19 @@ class MainHandler(RequestHandler):
         """Converts various types to JSON and returns to the client"""
         if hasattr(response, '__json__'):
             result = response.__json__()
-        elif isinstance(response, dict):
-            result = response
-        elif isinstance(response, self.BUILTIN_TYPES):
-            result = {
-                self._app.config['plain_result_key']: response
-            }
         else:
+            result = response
+
+        try:
+            json_str = json.dumps(result)
+        except TypeError:
             raise ServerError(
                 "Could not serialize '{}' to JSON".format(
                     type(response).__name__
                 )
             )
 
-        self._write_dict(result)
-
-    def _write_dict(self, response_dict):
-        """Converts a `dict` object to JSON string and returns to the client"""
-        result = json.dumps(response_dict, cls=CalmJSONEncoder)
-
-        self.write(result)
+        self.write(json_str)
 
     def write_error(self, status_code, exc_info=None, **kwargs):
         """The top function for writing errors"""

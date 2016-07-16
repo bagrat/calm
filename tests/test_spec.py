@@ -4,7 +4,7 @@ from calm import Application
 from calm.decorator import produces, consumes
 
 
-app = Application()
+app = Application('testapp', '1')
 
 
 @app.get('/regular_order')
