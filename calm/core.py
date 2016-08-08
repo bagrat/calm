@@ -2,8 +2,6 @@
 Here lies the core of Calm.
 """
 import re
-import inspect
-from inspect import Parameter
 from collections import defaultdict
 
 from tornado.web import Application
@@ -12,7 +10,7 @@ from tornado.websocket import WebSocketHandler
 from calm.ex import DefinitionError
 from calm.codec import ArgumentParser
 from calm.service import CalmService
-from calm.handler import MainHandler, DefaultHandler
+from calm.handler import MainHandler, DefaultHandler, HandlerDef
 
 __all__ = ['CalmApp']
 
@@ -252,71 +250,3 @@ class CalmApp(object):
     def service(self, url):
         """Returns a Service defined by the `url` prefix"""
         return CalmService(self, url)
-
-
-class HandlerDef(object):
-    """
-    Defines a request handler.
-
-    During initialization, the instance will process and store all argument
-    information.
-    """
-    URI_REGEX = re.compile(r':([^\/\?:]*)')
-
-    def __init__(self, uri, handler):
-        super(HandlerDef, self).__init__()
-
-        self.uri = uri
-        self.handler = handler
-        self._signature = inspect.signature(handler)
-        self._params = {
-            k: v for k, v in list(
-                self._signature.parameters.items()
-            )[1:]
-        }
-
-        self.path_args = []
-        self.query_args = {}
-
-        self.consumes = None
-        self.produces = None
-
-        self._extract_arguments()
-
-    def _extract_path_args(self):
-        """Extracts path arguments from the URI."""
-        regex = re.compile(self.uri)
-        self.path_args = list(regex.groupindex.keys())
-
-        for path_arg in self.path_args:
-            if path_arg in self._params:
-                if self._params[path_arg].default is not Parameter.empty:
-                    raise DefinitionError(
-                        "Path argument '{}' must not be optional in '{}'"
-                        .format(
-                            path_arg,
-                            self.handler.__name__
-                        )
-                    )
-            else:
-                raise DefinitionError(
-                    "Path argument '{}' must be expected by '{}'".format(
-                        path_arg,
-                        self.handler.__name__
-                    )
-                )
-
-    def _extract_query_arguments(self):
-        """
-        Extracts query arguments from handler signature
-
-        Should be called after path arguments are extracted.
-        """
-        for _, param in self._params.items():
-            if param.name not in self.path_args:
-                self.query_args[param.name] = param.default is Parameter.empty
-
-    def _extract_arguments(self):
-        """Extracts path and query arguments."""
-        self._extract_path_args()
-        self._extract_query_arguments()
