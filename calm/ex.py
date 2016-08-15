@@ -34,6 +34,15 @@ class ClientError(CalmError):
     code = None
     message = None
 
+    @classmethod
+    def get_defined_errors(cls):
+        """Get all the errors that have a defined message."""
+        subclasses = cls.__subclasses__()  # pylint: disable=no-member
+        result = [sc for sc in subclasses if sc.__doc__]
+        result += [sc.get_defined_errors for sc in subclasses]
+
+        return result
+
 
 class BadRequestError(ClientError):
     """

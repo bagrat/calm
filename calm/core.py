@@ -7,7 +7,7 @@ from collections import defaultdict
 from tornado.web import Application
 from tornado.websocket import WebSocketHandler
 
-from calm.ex import DefinitionError
+from calm.ex import DefinitionError, ClientError
 from calm.codec import ArgumentParser
 from calm.service import CalmService
 from calm.handler import MainHandler, DefaultHandler, HandlerDef
@@ -250,3 +250,61 @@ class CalmApp(object):
     def service(self, url):
         """Returns a Service defined by the `url` prefix"""
         return CalmService(self, url)
+
+    def _generate_swagger_json(self):
+        info = {
+            'title': self.name,
+            'version': self.version,
+        }
+
+        if self.description:
+            info['description'] = self.description
+        if self.tos:
+            info['termsOfService'] = self.tos
+        if self.contact:
+            info['contact'] = self.contact
+        if self.license:
+            info['license'] = self.license
+
+        swagger_json = {
+            'swagger': '2.0',
+            'info': info,
+            'consumes': ['application/json'],
+            'produces': ['application/json'],
+            # 'definitions': {},  # get from Resource
+            # 'paths': {},  # get from Application
+        }
+
+        if self.host:
+            swagger_json['host'] = self.host
+        if self.base_path:
+            swagger_json['basePath'] = self.base_path
+
+        defined_errors = ClientError.get_defined_errors()
+        response_definitions = {
+            e.__name__: self._generate_error_definition(e)
+            for e in defined_errors
+        }
+        if response_definitions:
+            swagger_json['responses'] = response_definitions
+
+        return swagger_json
+
+    @classmethod
+    def _generate_error_definition(cls, error):
+        return {
+            'description': error.__doc__,
+            'schema': {
+                '$ref': '#/definitions/Error'
+            }
+        }
+
+    def _generate_error_schema(self):
+        return {
+            'Error': {
+                'properties': {
+                    self.config['error_key']: {'type': 'string'}
+                },
+                'required': [self.config['error_key']]
+            }
+        }
