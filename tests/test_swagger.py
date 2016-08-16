@@ -7,6 +7,18 @@ from calm import Application
 app = Application(name='testapp', version='1')
 
 
+@app.post('/somepost/:somepatharg')
+def somepost(self, somepatharg,
+             somequeryarg: int,
+             somedefaultarg: str = "default"):
+    """
+    Some summary.
+
+    Some description.
+    """
+    pass
+
+
 class Swaggertests(CalmHTTPTestCase):
     def get_calm_app(self):
         global app
@@ -86,5 +98,45 @@ class Swaggertests(CalmHTTPTestCase):
                     'version': '1'
                 },
                 'produces': ['application/json'],
-                'consumes': ['application/json']
+                'consumes': ['application/json'],
+                'paths': {
+                    '/somepost/:somepatharg': {
+                        'post': somepost.handler_def.generate_operation_definition()
+                    }
+                }
             })
+
+    def test_operation_definition(self):
+        handler_def = somepost.handler_def
+
+        expected_opdef = {
+            'summary': 'Some summary.',
+            'description': 'Some description.',
+            'operation_id': 'tests_test_swagger_somepost',
+            'responses': {},
+            'parameters': [
+                {
+                    'name': 'somepatharg',
+                    'in': 'path',
+                    'required': True,
+                    'type': 'string'
+                },
+                {
+                    'name': 'somequeryarg',
+                    'in': 'query',
+                    # 'type': 'integer',
+                    'required': True
+                },
+                {
+                    'name': 'somedefaultarg',
+                    'in': 'query',
+                    # 'type': 'string',
+                    'required': False,
+                    'default': 'default'
+                }
+            ],
+            # 'responses': {}
+        }
+        actual_opdef = handler_def.generate_operation_definition()
+
+        self.assertEqual(expected_opdef, actual_opdef)

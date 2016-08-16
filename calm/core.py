@@ -114,7 +114,7 @@ class CalmApp(object):
             }
 
             route_defs.append(
-                (uri, MainHandler, init_params)
+                (self._regexify_uri(uri), MainHandler, init_params)
             )
 
         for url_spec in self._custom_handlers:
@@ -122,7 +122,7 @@ class CalmApp(object):
 
         for uri, handler in self._ws_map.items():
             route_defs.append(
-                (uri, handler)
+                (self._regexify_uri(uri), handler)
             )
 
         route_defs.append(
@@ -160,12 +160,17 @@ class CalmApp(object):
         return wrapper
 
     def _normalize_uri(self, *uri_fragments):
-        """Convert colon-uri into a regex."""
+        """Join the URI fragments and strip."""
         uri = '/'.join(
             u.strip('/') for u in uri_fragments
         )
-        uri = '/' + uri + '/?'
+        uri = '/' + uri
 
+        return uri
+
+    def _regexify_uri(self, uri):
+        """Convert a URL pattern into a regex."""
+        uri += '/?'
         path_params = self.URI_REGEX.findall(uri)
         for path_param in path_params:
             uri = uri.replace(
@@ -189,7 +194,8 @@ class CalmApp(object):
             * produces - a Resource type of what the operation produces
         """
         uri = self._normalize_uri(*uri_fragments)
-        handler_def = HandlerDef(uri, function)
+        uri_regex = self._regexify_uri(uri)
+        handler_def = HandlerDef(uri, uri_regex, function)
 
         consumes = getattr(function, 'consumes', consumes)
         produces = getattr(function, 'produces', produces)
@@ -295,6 +301,14 @@ class CalmApp(object):
         }
         if response_definitions:
             swagger_json['responses'] = response_definitions
+
+        paths = defaultdict(dict)
+        for uri, methods in self._route_map.items():
+            for method, hdef in methods.items():
+                paths[uri][method] = hdef.generate_operation_definition()
+
+        if paths:
+            swagger_json['paths'] = paths
 
         return swagger_json
 

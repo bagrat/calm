@@ -16,6 +16,7 @@ import datetime
 
 from tornado.web import RequestHandler
 from tornado.web import MissingArgumentError
+from untt.util import parse_docstring
 
 from calm.ex import (ServerError, ClientError, BadRequestError,
                      MethodNotAllowedError, NotFoundError, DefinitionError)
@@ -59,7 +60,8 @@ class MainHandler(RequestHandler):
     def _get_query_args(self, handler_def):
         """Retreives the values for query arguments."""
         query_args = {}
-        for qarg, is_required in handler_def.query_args.items():
+        for qarg, definition in handler_def.query_args.items():
+            is_required = definition['required']
             try:
                 query_args[qarg] = self.get_query_argument(qarg)
             except MissingArgumentError:
@@ -200,10 +202,11 @@ class HandlerDef(object):
     """
     URI_REGEX = re.compile(r':([^\/\?:]*)')
 
-    def __init__(self, uri, handler):
+    def __init__(self, uri, uri_regex, handler):
         super(HandlerDef, self).__init__()
 
         self.uri = uri
+        self.uri_regex = uri_regex
         self.handler = handler
         self._signature = inspect.signature(handler)
         self._params = {
@@ -222,7 +225,7 @@ class HandlerDef(object):
 
     def _extract_path_args(self):
         """Extracts path arguments from the URI."""
-        regex = re.compile(self.uri)
+        regex = re.compile(self.uri_regex)
         self.path_args = list(regex.groupindex.keys())
 
         for path_arg in self.path_args:
@@ -251,12 +254,66 @@ class HandlerDef(object):
         """
         for _, param in self._params.items():
             if param.name not in self.path_args:
-                self.query_args[param.name] = param.default is Parameter.empty
+                self.query_args[param.name] = {
+                    'required': param.default is Parameter.empty,
+                    'type': param.annotation,
+                    'default': param.default
+                    if param.default is not Parameter.empty else None
+                }
 
     def _extract_arguments(self):
         """Extracts path and query arguments."""
         self._extract_path_args()
         self._extract_query_arguments()
+
+    def generate_operation_definition(self):
+        summary, description = parse_docstring(self.handler.__doc__)
+
+        operation_id = '.'.join(
+            [self.handler.__module__, self.handler.__name__]
+        ).replace('.', '_')
+
+        parameters = []
+        for name in self.path_args:
+            parameters.append({
+                'name': name,
+                'in': 'path',
+                'required': True,
+                'type': 'string'
+                # TODO: add param description
+            })
+
+        for name, definition in self.query_args.items():
+            param = {
+                'name': name,
+                'in': 'query',
+                # TODO: add type conversion
+                # TODO: add param type
+                'required': definition['required'],
+            }
+            if definition['default']:
+                param['default'] = definition['default']
+            parameters.append(param)
+
+        if self.consumes:
+            parameters.append({
+                'name': name,
+                'in': 'body',
+                'required': True,
+                'schema': self.produces.json_schema
+            })
+
+        if self.produces:
+            pass  # TODO: add responses definition
+
+        return {
+            'summary': summary,
+            'description': description,
+            'operation_id': operation_id,
+            'parameters': parameters,
+            'responses': {}
+        }
+        # TODO: add deprecated indicator
 
 
 class SwaggerHandler(DefaultHandler):
