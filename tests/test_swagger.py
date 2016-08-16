@@ -101,7 +101,7 @@ class Swaggertests(CalmHTTPTestCase):
                 'consumes': ['application/json'],
                 'paths': {
                     '/somepost/:somepatharg': {
-                        'post': somepost.handler_def.generate_operation_definition()
+                        'post': somepost.handler_def.operation_definition
                     }
                 }
             })
@@ -114,7 +114,9 @@ class Swaggertests(CalmHTTPTestCase):
             'description': 'Some description.',
             'operation_id': 'tests_test_swagger_somepost',
             'responses': {},
-            'parameters': [
+            # 'responses': {}
+        }
+        expected_parameters = [
                 {
                     'name': 'somepatharg',
                     'in': 'path',
@@ -134,9 +136,9 @@ class Swaggertests(CalmHTTPTestCase):
                     'required': False,
                     'default': 'default'
                 }
-            ],
-            # 'responses': {}
-        }
-        actual_opdef = handler_def.generate_operation_definition()
+            ]
+        actual_opdef = handler_def.operation_definition
+        actual_parameters = actual_opdef.pop('parameters')
 
         self.assertEqual(expected_opdef, actual_opdef)
+        self.assertCountEqual(expected_parameters, actual_parameters)

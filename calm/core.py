@@ -305,7 +305,7 @@ class CalmApp(object):
         paths = defaultdict(dict)
         for uri, methods in self._route_map.items():
             for method, hdef in methods.items():
-                paths[uri][method] = hdef.generate_operation_definition()
+                paths[uri][method] = hdef.operation_definition
 
         if paths:
             swagger_json['paths'] = paths

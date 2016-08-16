@@ -222,6 +222,7 @@ class HandlerDef(object):
         self.produces = None
 
         self._extract_arguments()
+        self.operation_definition = self._generate_operation_definition()
 
     def _extract_path_args(self):
         """Extracts path arguments from the URI."""
@@ -266,8 +267,8 @@ class HandlerDef(object):
         self._extract_path_args()
         self._extract_query_arguments()
 
-    def generate_operation_definition(self):
-        summary, description = parse_docstring(self.handler.__doc__)
+    def _generate_operation_definition(self):
+        summary, description = parse_docstring(self.handler.__doc__ or '')
 
         operation_id = '.'.join(
             [self.handler.__module__, self.handler.__name__]
