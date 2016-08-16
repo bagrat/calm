@@ -159,7 +159,8 @@ class CalmApp(object):
 
         return wrapper
 
-    def _normalize_uri(self, *uri_fragments):
+    @classmethod
+    def _normalize_uri(cls, *uri_fragments):
         """Join the URI fragments and strip."""
         uri = '/'.join(
             u.strip('/') for u in uri_fragments
