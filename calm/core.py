@@ -10,7 +10,8 @@ from tornado.websocket import WebSocketHandler
 from calm.ex import DefinitionError, ClientError
 from calm.codec import ArgumentParser
 from calm.service import CalmService
-from calm.handler import MainHandler, DefaultHandler, HandlerDef
+from calm.handler import (MainHandler, DefaultHandler, SwaggerHandler,
+                          HandlerDef)
 
 __all__ = ['CalmApp']
 
@@ -37,7 +38,8 @@ class CalmApp(object):
     URI_REGEX = re.compile(r':([^\/\?:]*)')
     config = {  # The default configuration
         'argument_parser': ArgumentParser,
-        'error_key': 'error'
+        'error_key': 'error',
+        'swagger_url': '/swagger.json'
     }
 
     def __init__(self, name, version, *,
@@ -123,6 +125,12 @@ class CalmApp(object):
                 (uri, handler)
             )
 
+        route_defs.append(
+            (self.config['swagger_url'],
+             SwaggerHandler,
+             default_handler_args)
+        )
+
         self._app = Application(route_defs,
                                 default_handler_class=DefaultHandler,
                                 default_handler_args=default_handler_args)
@@ -138,7 +146,7 @@ class CalmApp(object):
         Decorator for custom handlers.
 
         A custom `RequestHandler` implementation decorated with this decorator
-        will be added to the application uti the specified `uri` and
+        will be added to the application with the specified `uri` and
         `init_args`.
         """
         def wrapper(klass):
@@ -251,7 +259,7 @@ class CalmApp(object):
         """Returns a Service defined by the `url` prefix"""
         return CalmService(self, url)
 
-    def _generate_swagger_json(self):
+    def generate_swagger_json(self):
         info = {
             'title': self.name,
             'version': self.version,

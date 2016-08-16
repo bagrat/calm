@@ -50,7 +50,7 @@ class MainHandler(RequestHandler):
         self._delete_handler = kwargs.pop('delete', None)
 
         self._argument_parser = kwargs.pop('argument_parser')()
-        self._app = kwargs.pop('app', None)
+        self._app = kwargs.pop('app')
 
         self.log = logging.getLogger('calm')
 
@@ -174,6 +174,10 @@ class MainHandler(RequestHandler):
         self.set_status(500)
         self.write(json.dumps(result))
 
+    def data_received(self, data):  # pragma: no cover
+        """This is to ommit quality check errors."""
+        pass
+
 
 class DefaultHandler(MainHandler):
     """
@@ -253,3 +257,14 @@ class HandlerDef(object):
         """Extracts path and query arguments."""
         self._extract_path_args()
         self._extract_query_arguments()
+
+
+class SwaggerHandler(DefaultHandler):
+    """
+    The handler for Swagger.io (OpenAPI).
+
+    This handler defined the GET method to output the Swagger.io (OpenAPI)
+    definition for the Calm Application.
+    """
+    async def get(self):
+        self.write(json.dumps(self._app.generate_swagger_json()))

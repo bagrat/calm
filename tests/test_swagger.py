@@ -43,7 +43,7 @@ class Swaggertests(CalmHTTPTestCase):
             'produces': ['application/json'],
         }
 
-        actual_swagger = test_app._generate_swagger_json()
+        actual_swagger = test_app.generate_swagger_json()
         actual_swagger.pop('responses')
         self.assertEqual(expected_swagger, actual_swagger)
 
@@ -65,7 +65,7 @@ class Swaggertests(CalmHTTPTestCase):
 
         with patch('calm.ex.ClientError.get_defined_errors') as gde:
             gde.return_value = [SomeError]
-            responses = someapp._generate_swagger_json().pop('responses')
+            responses = someapp.generate_swagger_json().pop('responses')
 
             self.assertEqual(responses, {
                 'SomeError': {
@@ -74,4 +74,17 @@ class Swaggertests(CalmHTTPTestCase):
                         '$ref': '#/definitions/Error'
                     }
                 }
+            })
+
+    def test_swagger_json(self):
+        with patch('calm.ex.ClientError.get_defined_errors') as gde:
+            gde.return_value = []
+            self.get('/swagger.json', expected_json_body={
+                'swagger': '2.0',
+                'info': {
+                    'title': 'testapp',
+                    'version': '1'
+                },
+                'produces': ['application/json'],
+                'consumes': ['application/json']
             })
