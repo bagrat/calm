@@ -9,8 +9,6 @@ Classes:
 
 from calm.ex import DefinitionError, ArgumentParseError
 
-__all__ = ['ArgumentParser']
-
 
 class ArgumentParser(object):
     """
@@ -54,23 +52,19 @@ class ArgumentParser(object):
                                requested type
         `ArgumentParseError` - raises when the parsing fails for some reason
     """
-    parsers = {}
-
     def __init__(self):
         super(ArgumentParser, self).__init__()
 
-        self._parsers = {**self._base_parsers, **self.parsers}  # noqa
-
-    @property
-    def _base_parsers(self):
-        """Defines the default argument parsers."""
-        return {
+        self._parsers = {
             int: self.parse_int
         }
 
     def parse(self, arg_type, value):
         """Parses the `value` to `arg_type` using the appropriate parser."""
         if arg_type not in self._parsers:
+            if hasattr(arg_type, 'parse'):
+                return arg_type.parse(value)
+
             raise DefinitionError(
                 "Argument parser for '{}' is not defined".format(
                     arg_type
@@ -88,3 +82,52 @@ class ArgumentParser(object):
             raise ArgumentParseError(
                 "Bad value for integer: {}".format(value)
             )
+
+
+class ParameterJsonType(str):
+    """An extended representation of a JSON type."""
+    basic_type_map = {
+        int: 'integer',
+        float: 'number',
+        str: 'string',
+        bool: 'boolean'
+    }
+
+    def __init__(self, name):
+        super().__init__()
+
+        self.name = name
+        self.params = {}
+
+    @classmethod
+    def from_python_type(cls, python_type):
+        """Converts a Python type to a JsonType object."""
+        if isinstance(python_type, list):
+            if len(python_type) != 1:
+                raise TypeError(
+                    "Array type can contain only one element, i.e item type."
+                )
+
+            if isinstance(python_type[0], list):
+                raise TypeError("Wrong parameter type: list of lists.")
+
+            json_type = ParameterJsonType('array')
+            json_type.params['items'] = cls.from_python_type(python_type[0])
+
+            return json_type
+
+        if isinstance(python_type, type):
+            if python_type in cls.basic_type_map:
+                # This is done to check direct equality to avoid subclass
+                # anomalies, e.g. `bool` is a subclass of `int`.
+                return ParameterJsonType(cls.basic_type_map[python_type])
+
+            for supported_type in cls.basic_type_map:
+                if issubclass(python_type, supported_type):
+                    return ParameterJsonType(
+                        cls.basic_type_map[supported_type]
+                    )
+
+        raise TypeError(
+            "No associated JSON type for '{}'".format(python_type)
+        )
