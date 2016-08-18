@@ -1,15 +1,28 @@
 from unittest.mock import patch
 
-from calm.testing import CalmHTTPTestCase
 from calm import Application
+from calm.testing import CalmHTTPTestCase
+from calm.decorator import produces, consumes
+from calm.resource import Resource
 
 
 app = Application(name='testapp', version='1')
 
 
+class SomeProdResource(Resource):
+    pass
+
+
+class SomeConsResource(Resource):
+    pass
+
+
 @app.post('/somepost/:somepatharg')
+@produces(SomeProdResource)
+@consumes(SomeConsResource)
 def somepost(self, somepatharg,
              somequeryarg: int,
+             somelistarg: [bool],
              somedefaultarg: str = "default"):
     """
     Some summary.
@@ -113,7 +126,11 @@ class Swaggertests(CalmHTTPTestCase):
             'summary': 'Some summary.',
             'description': 'Some description.',
             'operation_id': 'tests_test_swagger_somepost',
-            'responses': {},
+            'responses': {
+                '200': {
+                    '$ref': '#/definitions/SomeProdResource'
+                }
+            },
             # 'responses': {}
         }
         expected_parameters = [
@@ -126,15 +143,28 @@ class Swaggertests(CalmHTTPTestCase):
                 {
                     'name': 'somequeryarg',
                     'in': 'query',
-                    # 'type': 'integer',
+                    'type': 'integer',
                     'required': True
                 },
                 {
                     'name': 'somedefaultarg',
                     'in': 'query',
-                    # 'type': 'string',
+                    'type': 'string',
                     'required': False,
                     'default': 'default'
+                },
+                {
+                    'name': 'somelistarg',
+                    'in': 'query',
+                    'required': True,
+                    'type': 'array',
+                    'items': 'boolean'
+                },
+                {
+                    'in': 'body',
+                    'schema':  {
+                        '$ref': '#/definitions/SomeConsResource'
+                    }
                 }
             ]
         actual_opdef = handler_def.operation_definition

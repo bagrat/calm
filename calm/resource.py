@@ -8,4 +8,4 @@ class Resource(Entity):
 
     def __json__(self):
         """Proxies `Entity.to_json()`."""
-        return self.to_json()
+        return self.to_json()  # pragma: no cover

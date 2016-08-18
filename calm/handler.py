@@ -20,6 +20,7 @@ from untt.util import parse_docstring
 
 from calm.ex import (ServerError, ClientError, BadRequestError,
                      MethodNotAllowedError, NotFoundError, DefinitionError)
+from calm.codec import ParameterJsonType
 
 __all__ = ['MainHandler', 'DefaultHandler']
 
@@ -218,8 +219,8 @@ class HandlerDef(object):
         self.path_args = []
         self.query_args = {}
 
-        self.consumes = None
-        self.produces = None
+        self.consumes = getattr(handler, 'consumes', None)
+        self.produces = getattr(handler, 'produces', None)
 
         self._extract_arguments()
         self.operation_definition = self._generate_operation_definition()
@@ -255,11 +256,25 @@ class HandlerDef(object):
         """
         for _, param in self._params.items():
             if param.name not in self.path_args:
+                python_type = (param.annotation
+                               if param.annotation is not Parameter.empty
+                               else str)
+                try:
+                    json_type = ParameterJsonType.from_python_type(
+                        python_type
+                    )
+                except TypeError as ex:
+                    raise DefinitionError(
+                        "Wrong argument type for '{}'".format(param.name)
+                    ) from ex
+
                 self.query_args[param.name] = {
                     'required': param.default is Parameter.empty,
-                    'type': param.annotation,
-                    'default': param.default
-                    if param.default is not Parameter.empty else None
+                    'type': python_type,
+                    'json_type': json_type,
+                    'default': (param.default
+                                if param.default is not Parameter.empty
+                                else None)
                 }
 
     def _extract_arguments(self):
@@ -288,31 +303,35 @@ class HandlerDef(object):
             param = {
                 'name': name,
                 'in': 'query',
-                # TODO: add type conversion
-                # TODO: add param type
                 'required': definition['required'],
             }
+
+            param_type = ParameterJsonType.from_python_type(definition['type'])
+            param['type'] = param_type
+            if param_type == 'array':
+                param['items'] = param_type.params['items']
+
             if definition['default']:
                 param['default'] = definition['default']
             parameters.append(param)
 
         if self.consumes:
             parameters.append({
-                'name': name,
                 'in': 'body',
-                'required': True,
-                'schema': self.produces.json_schema
+                'schema': self.consumes.json_schema
             })
 
+        responses = {}
         if self.produces:
-            pass  # TODO: add responses definition
+            responses['200'] = self.produces.json_schema
+            # TODO: add error definition
 
         return {
             'summary': summary,
             'description': description,
             'operation_id': operation_id,
             'parameters': parameters,
-            'responses': {}
+            'responses': responses
         }
         # TODO: add deprecated indicator
 

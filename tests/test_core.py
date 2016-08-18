@@ -238,3 +238,9 @@ class CoreTests(CalmHTTPTestCase):
         self.get('/custom/handler',
                  expected_code=200,
                  expected_body='custom result')
+
+    def test_wrong_param_type(self):
+        def some_handler(request, badparam: set):
+            pass
+
+        self.assertRaises(DefinitionError, app.get('/something'), some_handler)
