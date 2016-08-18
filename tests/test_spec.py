@@ -3,16 +3,17 @@ from calm.testing import CalmHTTPTestCase
 from calm import Application
 from calm.decorator import produces, consumes
 from calm.resource import Resource
+from calm.ex import DefinitionError
 
 
 app = Application('testapp', '1')
 
 
-class ProdResource(SomeResource):
+class ProdResource(Resource):
     pass
 
 
-class ConsResource(SomeResource):
+class ConsResource(Resource):
     pass
 
 
@@ -45,3 +46,6 @@ class SpecTests(CalmHTTPTestCase):
         self.assertIsNotNone(handler.handler_def)
         self.assertEqual(handler.handler_def.consumes, ConsResource)
         self.assertEqual(handler.handler_def.produces, ProdResource)
+
+        self.assertRaises(DefinitionError, produces, int)
+        self.assertRaises(DefinitionError, consumes, str)

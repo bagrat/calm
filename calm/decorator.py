@@ -7,7 +7,7 @@ from calm.ex import DefinitionError
 
 def produces(resource_type):
     """Decorator to specify what kind of Resource the handler produces."""
-    if not isinstance(resource_type, Resource):
+    if not issubclass(resource_type, Resource):
         raise DefinitionError('@produces value should be of type Resource.')
 
     def decor(func):
@@ -30,7 +30,7 @@ def produces(resource_type):
 
 def consumes(resource_type):
     """Decorator to specify what kind of Resource the handler consumes."""
-    if not isinstance(resource_type, Resource):
+    if not issubclass(resource_type, Resource):
         raise DefinitionError('@consumes value should be of type Resource.')
 
     def decor(func):
