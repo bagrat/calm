@@ -267,6 +267,8 @@ class CalmApp(object):
         return CalmService(self, url)
 
     def generate_swagger_json(self):
+        # TODO: call this once during init
+        """Generates the swagger.json contents for the Calm Application."""
         info = {
             'title': self.name,
             'version': self.version,
