@@ -125,7 +125,7 @@ class Swaggertests(CalmHTTPTestCase):
         expected_opdef = {
             'summary': 'Some summary.',
             'description': 'Some description.',
-            'operation_id': 'tests_test_swagger_somepost',
+            'operationId': 'tests_test_swagger_somepost',
             'responses': {
                 '200': {
                     '$ref': '#/definitions/SomeProdResource'

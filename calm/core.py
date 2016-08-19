@@ -61,6 +61,8 @@ class CalmApp(object):
         self.host = host
         self.base_path = base_path
 
+        self.swagger_json = None
+
     def set_licence(self, name, url):
         """
         Set a License information for the API.
@@ -134,6 +136,8 @@ class CalmApp(object):
         self._app = Application(route_defs,
                                 default_handler_class=DefaultHandler,
                                 default_handler_args=default_handler_args)
+
+        self.swagger_json = self.generate_swagger_json()
 
         return self._app
 
@@ -266,9 +270,8 @@ class CalmApp(object):
         """Returns a Service defined by the `url` prefix"""
         return CalmService(self, url)
 
-    def generate_swagger_json(self):
-        # TODO: call this once during init
-        """Generates the swagger.json contents for the Calm Application."""
+    def _generate_swagger_info(self):
+        """Generate `info` key of swagger.json."""
         info = {
             'title': self.name,
             'version': self.version,
@@ -283,35 +286,43 @@ class CalmApp(object):
         if self.license:
             info['license'] = self.license
 
+        return info
+
+    def _generate_swagger_paths(self):
+        """Generate `paths` definitions of swajjer.json."""
+        paths = defaultdict(dict)
+        for uri, methods in self._route_map.items():
+            for method, hdef in methods.items():
+                paths[uri][method] = hdef.operation_definition
+
+        return dict(paths)
+
+    def _generate_swagger_responses(self):
+        defined_errors = ClientError.get_defined_errors()
+        return {
+            e.__name__: self._generate_error_definition(e)
+            for e in defined_errors
+        }
+
+    def generate_swagger_json(self):
+        """Generates the swagger.json contents for the Calm Application."""
+        # TODO: call this once during init
         swagger_json = {
             'swagger': '2.0',
-            'info': info,
+            'info': self._generate_swagger_info(),
             'consumes': ['application/json'],
             'produces': ['application/json'],
-            # 'definitions': {},  # get from Resource
-            # 'paths': {},  # get from Application
+            # TODO: add definitions 'definitions': {},  # get from Resource
         }
 
         if self.host:
             swagger_json['host'] = self.host
         if self.base_path:
             swagger_json['basePath'] = self.base_path
+        # TODO: add schemes
 
-        defined_errors = ClientError.get_defined_errors()
-        response_definitions = {
-            e.__name__: self._generate_error_definition(e)
-            for e in defined_errors
-        }
-        if response_definitions:
-            swagger_json['responses'] = response_definitions
-
-        paths = defaultdict(dict)
-        for uri, methods in self._route_map.items():
-            for method, hdef in methods.items():
-                paths[uri][method] = hdef.operation_definition
-
-        if paths:
-            swagger_json['paths'] = paths
+        swagger_json['responses'] = self._generate_swagger_responses()
+        swagger_json['paths'] = self._generate_swagger_paths()
 
         return swagger_json
 

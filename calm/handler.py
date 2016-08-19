@@ -146,7 +146,9 @@ class MainHandler(RequestHandler):
                 )
             )
 
+        self.set_header('Content-Type', 'application/json')
         self.write(json_str)
+        self.finish()
 
     def write_error(self, status_code, exc_info=None, **kwargs):
         """The top function for writing errors"""
@@ -329,7 +331,7 @@ class HandlerDef(object):
         return {
             'summary': summary,
             'description': description,
-            'operation_id': operation_id,
+            'operationId': operation_id,
             'parameters': parameters,
             'responses': responses
         }
@@ -344,4 +346,4 @@ class SwaggerHandler(DefaultHandler):
     definition for the Calm Application.
     """
     async def get(self):
-        self.write(json.dumps(self._app.generate_swagger_json()))
+        self._write_response(self._app.swagger_json)
