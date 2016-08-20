@@ -59,3 +59,10 @@ def fails(*errors):
         return func
 
     return decor
+
+
+def deprecated(func):
+    """Decorator to specify that the handler is deprecated."""
+    _set_handler_attribute(func, 'deprecated', True)
+
+    return func

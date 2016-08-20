@@ -225,6 +225,7 @@ class HandlerDef(object):
         self.consumes = getattr(handler, 'consumes', None)
         self.produces = getattr(handler, 'produces', None)
         self.errors = getattr(handler, 'errors', [])
+        self.deprecated = getattr(handler, 'deprecated', False)
 
         self._extract_arguments()
         self.operation_definition = self._generate_operation_definition()
@@ -334,14 +335,18 @@ class HandlerDef(object):
         for error in self.errors:
             responses[str(error.code)] = util.generate_error_definition(error)
 
-        return {
+        opdef = {
             'summary': summary,
             'description': description,
             'operationId': operation_id,
             'parameters': parameters,
             'responses': responses
         }
-        # TODO: add deprecated indicator
+
+        if self.deprecated:
+            opdef['deprecated'] = True
+
+        return opdef
 
 
 class SwaggerHandler(DefaultHandler):

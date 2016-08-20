@@ -334,7 +334,6 @@ class CalmApp(object):
 
         return swagger_json
 
-    @classmethod
     def _generate_error_schema(self):
         return {
             'Error': {

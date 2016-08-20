@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from calm import Application
 from calm.testing import CalmHTTPTestCase
-from calm.decorator import produces, consumes, fails
+from calm.decorator import produces, consumes, fails, deprecated
 from calm.resource import Resource
 from calm.ex import ClientError
 
@@ -27,6 +27,7 @@ class SomeError(ClientError):
 @produces(SomeProdResource)
 @consumes(SomeConsResource)
 @fails(SomeError)
+@deprecated
 def somepost(self, somepatharg,
              somequeryarg: int,
              somelistarg: [bool],
@@ -135,6 +136,7 @@ class Swaggertests(CalmHTTPTestCase):
             'summary': 'Some summary.',
             'description': 'Some description.',
             'operationId': 'tests_test_swagger_somepost',
+            'deprecated': True,
             'responses': {
                 '200': {
                     'description': '',
