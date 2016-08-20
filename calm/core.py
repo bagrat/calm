@@ -37,7 +37,7 @@ class CalmApp(object):
         * make_app - compiles the Calm application and returns a Tornado
                      Application instance
     """
-    URI_REGEX = re.compile(r':([^\/\?:]*)')
+    URI_REGEX = re.compile(r'\{([^\/\?\}]*)\}')
     config = {  # The default configuration
         'argument_parser': ArgumentParser,
         'error_key': 'error',
@@ -181,7 +181,7 @@ class CalmApp(object):
         path_params = self.URI_REGEX.findall(uri)
         for path_param in path_params:
             uri = uri.replace(
-                ':{}'.format(path_param),
+                '{{{}}}'.format(path_param),
                 r'(?P<{}>[^\/\?]*)'.format(path_param)
             )
 

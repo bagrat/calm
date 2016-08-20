@@ -7,27 +7,27 @@ service1 = app.service('/service1')
 service2 = app.service('/service2')
 
 
-@service1.get('/url1/:retparam')
+@service1.get('/url1/{retparam}')
 def service1_url1(request, retparam):
     return retparam
 
 
-@service1.put('/url2/:retparam')
+@service1.put('/url2/{retparam}')
 def service1_url2(request, retparam):
     return retparam
 
 
-@service2.post('/url1/:retparam')
+@service2.post('/url1/{retparam}')
 def service2_url2(request, retparam):
     return retparam
 
 
-@service2.delete('/url2/:retparam')
+@service2.delete('/url2/{retparam}')
 def service2_url3(request, retparam):
     return retparam
 
 
-@app.delete('/applevel/:retparam')
+@app.delete('/applevel/{retparam}')
 def applevel(request, retparam):
     return retparam
 

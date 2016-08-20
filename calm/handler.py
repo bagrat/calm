@@ -204,7 +204,7 @@ class HandlerDef(object):
     During initialization, the instance will process and store all argument
     information.
     """
-    URI_REGEX = re.compile(r':([^\/\?:]*)')
+    URI_REGEX = re.compile(r'\{([^\/\?\}]*)\}')
 
     def __init__(self, uri, uri_regex, handler):
         super(HandlerDef, self).__init__()
@@ -323,6 +323,7 @@ class HandlerDef(object):
         if self.consumes:
             parameters.append({
                 'in': 'body',
+                'name': 'body',
                 'schema': self.consumes.json_schema
             })
 
@@ -332,6 +333,11 @@ class HandlerDef(object):
                 'description': '',  # TODO: decide what to put down here
                 'schema': self.produces.json_schema
             }
+        else:
+            responses['204'] = {
+                'description': 'This endpoint does not return data.'
+            }
+
         for error in self.errors:
             responses[str(error.code)] = util.generate_error_definition(error)
 

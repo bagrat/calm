@@ -23,7 +23,7 @@ class SomeError(ClientError):
     code = 456
 
 
-@app.post('/somepost/:somepatharg')
+@app.post('/somepost/{somepatharg}')
 @produces(SomeProdResource)
 @consumes(SomeConsResource)
 @fails(SomeError)
@@ -121,7 +121,7 @@ class Swaggertests(CalmHTTPTestCase):
             'produces': ['application/json'],
             'consumes': ['application/json'],
             'paths': {
-                '/somepost/:somepatharg': {
+                '/somepost/{somepatharg}': {
                     'post': somepost.handler_def.operation_definition
                 }
             },
@@ -181,6 +181,7 @@ class Swaggertests(CalmHTTPTestCase):
                 },
                 {
                     'in': 'body',
+                    'name': 'body',
                     'schema':  {
                         '$ref': '#/definitions/SomeConsResource'
                     }

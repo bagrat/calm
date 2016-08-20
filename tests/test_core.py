@@ -8,12 +8,12 @@ from calm.ex import DefinitionError, MethodNotAllowedError, NotFoundError
 app = Application('testapp', '1')
 
 
-@app.get('/async/:param')
+@app.get('/async/{param}')
 async def async_mock(request, param):
     return param
 
 
-@app.post('/sync/:param')
+@app.post('/sync/{param}')
 def sync_mock(request, param):
     return param
 
@@ -39,7 +39,7 @@ def blow_things_up(request):
     raise TypeError()
 
 
-@app.delete('/response/:rtype')
+@app.delete('/response/{rtype}')
 def response_manipulations(request, rtype):
     if rtype == 'str':
         return 'test_result'
@@ -133,14 +133,14 @@ class CoreTests(CalmHTTPTestCase):
             pass
 
         self.assertRaises(DefinitionError,
-                          app.delete('/missing_path_param/:param'),
+                          app.delete('/missing_path_param/{param}'),
                           missing_path_param)
 
         async def default_path_param(request, param='default'):
             pass
 
         self.assertRaises(DefinitionError,
-                          app.delete('/default_path_param/:param'),
+                          app.delete('/default_path_param/{param}'),
                           default_path_param)
 
     def test_required_query_param(self):
