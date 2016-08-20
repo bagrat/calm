@@ -2,8 +2,9 @@ from unittest.mock import patch
 
 from calm import Application
 from calm.testing import CalmHTTPTestCase
-from calm.decorator import produces, consumes
+from calm.decorator import produces, consumes, fails
 from calm.resource import Resource
+from calm.ex import ClientError
 
 
 app = Application(name='testapp', version='1')
@@ -17,9 +18,15 @@ class SomeConsResource(Resource):
     pass
 
 
+class SomeError(ClientError):
+    """some error"""
+    code = 456
+
+
 @app.post('/somepost/:somepatharg')
 @produces(SomeProdResource)
 @consumes(SomeConsResource)
+@fails(SomeError)
 def somepost(self, somepatharg,
              somequeryarg: int,
              somelistarg: [bool],
@@ -130,7 +137,16 @@ class Swaggertests(CalmHTTPTestCase):
             'operationId': 'tests_test_swagger_somepost',
             'responses': {
                 '200': {
-                    '$ref': '#/definitions/SomeProdResource'
+                    'description': '',
+                    'schema': {
+                        '$ref': '#/definitions/SomeProdResource'
+                    }
+                },
+                '456': {
+                    'description': 'some error',
+                    'schema': {
+                        '$ref': '#/definitions/Error'
+                    }
                 }
             },
         }

@@ -1,9 +1,11 @@
+from unittest.mock import MagicMock
+
 from calm.testing import CalmHTTPTestCase
 
 from calm import Application
-from calm.decorator import produces, consumes
+from calm.decorator import produces, consumes, fails
 from calm.resource import Resource
-from calm.ex import DefinitionError
+from calm.ex import DefinitionError, BadRequestError
 
 
 app = Application('testapp', '1')
@@ -31,7 +33,7 @@ def reverse_order_handler(request):
     pass
 
 
-class SpecTests(CalmHTTPTestCase):
+class DecoratorTests(CalmHTTPTestCase):
     def get_calm_app(self):
         global app
         return app
@@ -49,3 +51,17 @@ class SpecTests(CalmHTTPTestCase):
 
         self.assertRaises(DefinitionError, produces, int)
         self.assertRaises(DefinitionError, consumes, str)
+
+    def test_fails(self):
+        def func():
+            pass
+
+        fails(BadRequestError)(func)
+
+        self.assertEqual(len(func.errors), 1)
+        self.assertIn(BadRequestError, func.errors)
+
+        class BadError():
+            pass
+
+        self.assertRaises(DefinitionError, fails, BadError)

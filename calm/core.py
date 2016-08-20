@@ -7,14 +7,13 @@ from collections import defaultdict
 from tornado.web import Application
 from tornado.websocket import WebSocketHandler
 
-from untt.util import parse_docstring
-
 from calm.ex import DefinitionError, ClientError
 from calm.codec import ArgumentParser
 from calm.service import CalmService
 from calm.handler import (MainHandler, DefaultHandler, SwaggerHandler,
                           HandlerDef)
 from calm.resource import Resource
+from calm import util
 
 __all__ = ['CalmApp']
 
@@ -292,7 +291,7 @@ class CalmApp(object):
         return info
 
     def _generate_swagger_paths(self):
-        """Generate `paths` definitions of swajjer.json."""
+        """Generate `paths` definitions of swagger.json."""
         paths = defaultdict(dict)
         for uri, methods in self._route_map.items():
             for method, hdef in methods.items():
@@ -301,13 +300,15 @@ class CalmApp(object):
         return dict(paths)
 
     def _generate_swagger_responses(self):
+        """Generate `responses` definitions of swagger.json."""
         defined_errors = ClientError.get_defined_errors()
         return {
-            e.__name__: self._generate_error_definition(e)
+            e.__name__: util.generate_error_definition(e)
             for e in defined_errors
         }
 
     def _generate_swagger_definitions(self):
+        """Generate `definitions` definitions of swagger.json."""
         resource_defs = Resource.schema_definitions
         resource_defs.update(self._generate_error_schema())
 
@@ -315,7 +316,6 @@ class CalmApp(object):
 
     def generate_swagger_json(self):
         """Generates the swagger.json contents for the Calm Application."""
-        # TODO: call this once during init
         swagger_json = {
             'swagger': '2.0',
             'info': self._generate_swagger_info(),
@@ -335,16 +335,6 @@ class CalmApp(object):
         return swagger_json
 
     @classmethod
-    def _generate_error_definition(cls, error):
-        summary, description = parse_docstring(error.__doc__)
-        doc_split = [summary, '\n', 'description'] if description else [summary]
-        return {
-            'description': '\n'.join(doc_split),
-            'schema': {
-                '$ref': '#/definitions/Error'
-            }
-        }
-
     def _generate_error_schema(self):
         return {
             'Error': {

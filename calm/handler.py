@@ -21,6 +21,7 @@ from untt.util import parse_docstring
 from calm.ex import (ServerError, ClientError, BadRequestError,
                      MethodNotAllowedError, NotFoundError, DefinitionError)
 from calm.codec import ParameterJsonType
+from calm import util
 
 __all__ = ['MainHandler', 'DefaultHandler']
 
@@ -223,6 +224,7 @@ class HandlerDef(object):
 
         self.consumes = getattr(handler, 'consumes', None)
         self.produces = getattr(handler, 'produces', None)
+        self.errors = getattr(handler, 'errors', [])
 
         self._extract_arguments()
         self.operation_definition = self._generate_operation_definition()
@@ -325,8 +327,12 @@ class HandlerDef(object):
 
         responses = {}
         if self.produces:
-            responses['200'] = self.produces.json_schema
-            # TODO: add error definition
+            responses['200'] = {
+                'description': '',  # TODO: decide what to put down here
+                'schema': self.produces.json_schema
+            }
+        for error in self.errors:
+            responses[str(error.code)] = util.generate_error_definition(error)
 
         return {
             'summary': summary,

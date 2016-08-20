@@ -2,7 +2,19 @@
 This module defines general decorators to define the Calm Application.
 """
 from calm.resource import Resource
-from calm.ex import DefinitionError
+from calm.ex import DefinitionError, ClientError
+
+
+def _set_handler_attribute(func, attr, value):
+    """
+    This checks whether the function is already defined as a Calm handler or
+    not and sets the appropriate attribute based on that. This is done in
+    order to not enforce a particular order for the decorators.
+    """
+    if getattr(func, 'handler_def', None):
+        setattr(func.handler_def, attr, value)
+    else:
+        setattr(func, attr, value)
 
 
 def produces(resource_type):
@@ -11,17 +23,8 @@ def produces(resource_type):
         raise DefinitionError('@produces value should be of type Resource.')
 
     def decor(func):
-        """
-        The function wrapper.
-
-        It checks whether the function is already defined as a Calm handler or
-        not and sets the appropriate attribute based on that. This is done in
-        order to not enforce a particular order for the decorators.
-        """
-        if getattr(func, 'handler_def', None):
-            func.handler_def.produces = resource_type
-        else:
-            func.produces = resource_type
+        """The function wrapper."""
+        _set_handler_attribute(func, 'produces', resource_type)
 
         return func
 
@@ -34,17 +37,24 @@ def consumes(resource_type):
         raise DefinitionError('@consumes value should be of type Resource.')
 
     def decor(func):
-        """
-        The function wrapper.
+        """The function wrapper."""
+        _set_handler_attribute(func, 'consumes', resource_type)
 
-        It checks whether the function is already defined as a Calm handler or
-        not and sets the appropriate attribute based on that. This is done in
-        order to not enforce a particular order for the decorators.
-        """
-        if getattr(func, 'handler_def', None):
-            func.handler_def.consumes = resource_type
-        else:
-            func.consumes = resource_type
+        return func
+
+    return decor
+
+
+def fails(*errors):
+    """Decorator to specify the list of errors returned by the handler."""
+    for error in errors:
+        if not issubclass(error, ClientError):
+            raise DefinitionError('@fails accepts only subclasses of '
+                                  'calm.ex.ClientError')
+
+    def decor(func):
+        """The function wrapper."""
+        _set_handler_attribute(func, 'errors', errors)
 
         return func
 
