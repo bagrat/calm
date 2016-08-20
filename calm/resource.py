@@ -1,5 +1,7 @@
 from untt import Entity
 from untt.util import entity_base
+from untt.types import (Integer, Number, String,  # noqa
+                        Boolean, Array, Datetime)
 
 
 @entity_base
