@@ -70,6 +70,7 @@ class Swaggertests(CalmHTTPTestCase):
 
         actual_swagger = test_app.generate_swagger_json()
         actual_swagger.pop('responses')
+        actual_swagger.pop('paths')
         self.assertEqual(expected_swagger, actual_swagger)
 
     def test_error_responses(self):
@@ -102,22 +103,21 @@ class Swaggertests(CalmHTTPTestCase):
             })
 
     def test_swagger_json(self):
-        with patch('calm.ex.ClientError.get_defined_errors') as gde:
-            gde.return_value = []
-            self.get('/swagger.json', expected_json_body={
-                'swagger': '2.0',
-                'info': {
-                    'title': 'testapp',
-                    'version': '1'
-                },
-                'produces': ['application/json'],
-                'consumes': ['application/json'],
-                'paths': {
-                    '/somepost/:somepatharg': {
-                        'post': somepost.handler_def.operation_definition
-                    }
+        self.get('/swagger.json', expected_json_body={
+            'swagger': '2.0',
+            'info': {
+                'title': 'testapp',
+                'version': '1'
+            },
+            'produces': ['application/json'],
+            'consumes': ['application/json'],
+            'paths': {
+                '/somepost/:somepatharg': {
+                    'post': somepost.handler_def.operation_definition
                 }
-            })
+            },
+            'responses': app._generate_swagger_responses()
+        })
 
     def test_operation_definition(self):
         handler_def = somepost.handler_def
@@ -131,7 +131,6 @@ class Swaggertests(CalmHTTPTestCase):
                     '$ref': '#/definitions/SomeProdResource'
                 }
             },
-            # 'responses': {}
         }
         expected_parameters = [
                 {
