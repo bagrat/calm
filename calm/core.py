@@ -12,6 +12,7 @@ from calm.codec import ArgumentParser
 from calm.service import CalmService
 from calm.handler import (MainHandler, DefaultHandler, SwaggerHandler,
                           HandlerDef)
+from calm.resource import Resource
 
 __all__ = ['CalmApp']
 
@@ -304,6 +305,12 @@ class CalmApp(object):
             for e in defined_errors
         }
 
+    def _generate_swagger_definitions(self):
+        resource_defs = Resource.schema_definitions
+        resource_defs.update(self._generate_error_schema())
+
+        return resource_defs
+
     def generate_swagger_json(self):
         """Generates the swagger.json contents for the Calm Application."""
         # TODO: call this once during init
@@ -312,7 +319,9 @@ class CalmApp(object):
             'info': self._generate_swagger_info(),
             'consumes': ['application/json'],
             'produces': ['application/json'],
-            # TODO: add definitions 'definitions': {},  # get from Resource
+            'definitions': self._generate_swagger_definitions(),
+            'responses': self._generate_swagger_responses(),
+            'paths': self._generate_swagger_paths()
         }
 
         if self.host:
@@ -320,9 +329,6 @@ class CalmApp(object):
         if self.base_path:
             swagger_json['basePath'] = self.base_path
         # TODO: add schemes
-
-        swagger_json['responses'] = self._generate_swagger_responses()
-        swagger_json['paths'] = self._generate_swagger_paths()
 
         return swagger_json
 

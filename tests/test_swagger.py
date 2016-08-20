@@ -70,6 +70,7 @@ class Swaggertests(CalmHTTPTestCase):
 
         actual_swagger = test_app.generate_swagger_json()
         actual_swagger.pop('responses')
+        actual_swagger.pop('definitions')
         actual_swagger.pop('paths')
         self.assertEqual(expected_swagger, actual_swagger)
 
@@ -116,6 +117,7 @@ class Swaggertests(CalmHTTPTestCase):
                     'post': somepost.handler_def.operation_definition
                 }
             },
+            'definitions': app._generate_swagger_definitions(),
             'responses': app._generate_swagger_responses()
         })
 
