@@ -20,7 +20,7 @@ from untt.util import parse_docstring
 
 from calm.ex import (ServerError, ClientError, BadRequestError,
                      MethodNotAllowedError, NotFoundError, DefinitionError)
-from calm.codec import ParameterJsonType
+from calm.param import QueryParam, PathParam
 from calm import util
 
 __all__ = ['MainHandler', 'DefaultHandler']
@@ -62,16 +62,15 @@ class MainHandler(RequestHandler):
     def _get_query_args(self, handler_def):
         """Retreives the values for query arguments."""
         query_args = {}
-        for qarg, definition in handler_def.query_args.items():
-            is_required = definition['required']
+        for qarg in handler_def.query_args:
             try:
-                query_args[qarg] = self.get_query_argument(qarg)
+                query_args[qarg.name] = self.get_query_argument(qarg.name)
             except MissingArgumentError:
-                if not is_required:
+                if not qarg.required:
                     continue
 
                 raise BadRequestError(
-                    "Missing required query argument '{}'".format(qarg)
+                    "Missing required query argument '{}'".format(qarg.name)
                 )
 
         return query_args
@@ -220,7 +219,7 @@ class HandlerDef(object):
         }
 
         self.path_args = []
-        self.query_args = {}
+        self.query_args = []
 
         self.consumes = getattr(handler, 'consumes', None)
         self.produces = getattr(handler, 'produces', None)
@@ -233,22 +232,27 @@ class HandlerDef(object):
     def _extract_path_args(self):
         """Extracts path arguments from the URI."""
         regex = re.compile(self.uri_regex)
-        self.path_args = list(regex.groupindex.keys())
+        path_arg_names = list(regex.groupindex.keys())
 
-        for path_arg in self.path_args:
-            if path_arg in self._params:
-                if self._params[path_arg].default is not Parameter.empty:
+        for arg_name in path_arg_names:
+            if arg_name in self._params:
+                if self._params[arg_name].default is not Parameter.empty:
                     raise DefinitionError(
                         "Path argument '{}' must not be optional in '{}'"
                         .format(
-                            path_arg,
+                            arg_name,
                             self.handler.__name__
                         )
                     )
+
+                self.path_args.append(
+                    PathParam(arg_name,
+                              self._params[arg_name].annotation)
+                )
             else:
                 raise DefinitionError(
                     "Path argument '{}' must be expected by '{}'".format(
-                        path_arg,
+                        arg_name,
                         self.handler.__name__
                     )
                 )
@@ -260,27 +264,12 @@ class HandlerDef(object):
         Should be called after path arguments are extracted.
         """
         for _, param in self._params.items():
-            if param.name not in self.path_args:
-                python_type = (param.annotation
-                               if param.annotation is not Parameter.empty
-                               else str)
-                try:
-                    json_type = ParameterJsonType.from_python_type(
-                        python_type
-                    )
-                except TypeError as ex:
-                    raise DefinitionError(
-                        "Wrong argument type for '{}'".format(param.name)
-                    ) from ex
-
-                self.query_args[param.name] = {
-                    'required': param.default is Parameter.empty,
-                    'type': python_type,
-                    'json_type': json_type,
-                    'default': (param.default
-                                if param.default is not Parameter.empty
-                                else None)
-                }
+            if param.name not in [a.name for a in self.path_args]:
+                self.query_args.append(
+                    QueryParam(param.name,
+                               param.annotation,
+                               param.default)
+                )
 
     def _extract_arguments(self):
         """Extracts path and query arguments."""
@@ -295,30 +284,17 @@ class HandlerDef(object):
         ).replace('.', '_')
 
         parameters = []
-        for name in self.path_args:
-            parameters.append({
-                'name': name,
-                'in': 'path',
-                'required': True,
-                'type': 'string'
-                # TODO: add param description
-            })
+        # for name in self.path_args:
+        #     parameters.append({
+        #         'name': name,
+        #         'in': 'path',
+        #         'required': True,
+        #         'type': 'string'
+        #         # TODO: add param description
+        #     })
 
-        for name, definition in self.query_args.items():
-            param = {
-                'name': name,
-                'in': 'query',
-                'required': definition['required'],
-            }
-
-            param_type = ParameterJsonType.from_python_type(definition['type'])
-            param['type'] = param_type
-            if param_type == 'array':
-                param['items'] = param_type.params['items']
-
-            if definition['default']:
-                param['default'] = definition['default']
-            parameters.append(param)
+        parameters += [q.generate_swagger() for q in self.path_args]
+        parameters += [q.generate_swagger() for q in self.query_args]
 
         if self.consumes:
             parameters.append({
