@@ -18,6 +18,7 @@ from tornado.web import RequestHandler
 from tornado.web import MissingArgumentError
 
 from untt.util import parse_docstring
+from untt.ex import ValidationError
 
 from calm.ex import (ServerError, ClientError, BadRequestError,
                      MethodNotAllowedError, NotFoundError, DefinitionError)
@@ -86,16 +87,25 @@ class MainHandler(RequestHandler):
 
             args[arg] = self._argument_parser.parse(arg_type, args[arg])
 
-    def _parse_and_update_body(self):
+    def _parse_and_update_body(self, handler_def):
         """Parses the request body to JSON."""
         if self.request.body:
             try:
                 json_body = json.loads(self.request.body.decode('utf-8'))
-                self.request.body = json_body
             except json.JSONDecodeError:
                 raise BadRequestError(
                     "Malformed request body. JSON is expected."
                 )
+
+            new_body = json_body
+            if handler_def.consumes:
+                try:
+                    new_body = handler_def.consumes.from_json(json_body)
+                except ValidationError:
+                    # TODO: log warning or error
+                    raise BadRequestError("Bad data structure.")
+
+            self.request.body = new_body
 
     async def _handle_request(self, handler_def, **kwargs):
         """A generic HTTP method handler."""
@@ -105,14 +115,15 @@ class MainHandler(RequestHandler):
         handler = handler_def.handler
         kwargs.update(self._get_query_args(handler_def))
         self._cast_args(handler, kwargs)
-        self._parse_and_update_body()
+        self._parse_and_update_body(handler_def)
         if inspect.iscoroutinefunction(handler):
             resp = await handler(self.request, **kwargs)
         else:
             self.log.warning("'%s' is not a coroutine!", handler_def.handler)
             resp = handler(self.request, **kwargs)
 
-        self._write_response(resp)
+        if resp:
+            self._write_response(resp, handler_def)
 
     async def get(self, **kwargs):
         """The HTTP GET handler."""
@@ -130,12 +141,22 @@ class MainHandler(RequestHandler):
         """The HTTP DELETE handler."""
         await self._handle_request(self._delete_handler, **kwargs)
 
-    def _write_response(self, response):
+    def _write_response(self, response, handler_def=None):
         """Converts various types to JSON and returns to the client"""
         if hasattr(response, '__json__'):
             result = response.__json__()
         else:
             result = response
+
+        if handler_def and handler_def.produces:
+            try:
+                handler_def.produces.validate(result)
+            except ValidationError:
+                # TODO: warn about bad output
+                pass
+        else:
+            # TODO: warn
+            pass
 
         try:
             json_str = json.dumps(result)

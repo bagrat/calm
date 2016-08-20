@@ -3,6 +3,8 @@ from tornado.web import RequestHandler
 from calm.testing import CalmHTTPTestCase
 from calm import Application
 from calm.ex import DefinitionError, MethodNotAllowedError, NotFoundError
+from calm.resource import Resource, Integer, String
+from calm.decorator import produces, consumes
 
 
 app = Application('testapp', '1')
@@ -74,6 +76,21 @@ custom_service = app.service('/custom')
 class MyHandler(RequestHandler):
     def get(self):
         self.write("custom result")
+
+
+class SomeResource(Resource):
+    someint = Integer()
+    somestr = String()
+
+
+@app.post('/input/output/validation')
+@produces(SomeResource)
+@consumes(SomeResource)
+def input_output_validation(self, someint=1, somestr='hey'):
+    return {
+        'someint': someint,
+        'somestr': somestr
+    }
 
 
 class CoreTests(CalmHTTPTestCase):
@@ -244,3 +261,24 @@ class CoreTests(CalmHTTPTestCase):
             pass
 
         self.assertRaises(DefinitionError, app.get('/something'), some_handler)
+
+    def test_io_validation(self):
+        bad_data = {
+            'someint': 'notint',
+            'somestr': 123
+        }
+        self.post('/input/output/validation',
+                  json_body=bad_data,
+                  expected_code=400)
+
+        good_data = {
+            'someint': 123,
+            'somestr': 'abc'
+        }
+
+        print(input_output_validation.produces)
+        print(input_output_validation.consumes)
+        self.post('/input/output/validation',
+                  query_args=bad_data,
+                  json_body=good_data,
+                  expected_code=500)

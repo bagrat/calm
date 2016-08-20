@@ -1,10 +1,8 @@
-from unittest.mock import MagicMock
-
 from calm.testing import CalmHTTPTestCase
 
 from calm import Application
 from calm.decorator import produces, consumes, fails
-from calm.resource import Resource
+from calm.resource import Resource, Integer
 from calm.ex import DefinitionError, BadRequestError
 
 
@@ -12,11 +10,11 @@ app = Application('testapp', '1')
 
 
 class ProdResource(Resource):
-    pass
+    someint = Integer()
 
 
 class ConsResource(Resource):
-    pass
+    someint = Integer()
 
 
 @app.get('/regular_order')

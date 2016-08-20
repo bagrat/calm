@@ -3,7 +3,7 @@ from unittest.mock import patch
 from calm import Application
 from calm.testing import CalmHTTPTestCase
 from calm.decorator import produces, consumes, fails, deprecated
-from calm.resource import Resource
+from calm.resource import Resource, Integer
 from calm.ex import ClientError
 
 
@@ -11,11 +11,11 @@ app = Application(name='testapp', version='1')
 
 
 class SomeProdResource(Resource):
-    pass
+    someint = Integer()
 
 
 class SomeConsResource(Resource):
-    pass
+    someint = Integer()
 
 
 class SomeError(ClientError):
