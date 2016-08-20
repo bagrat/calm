@@ -145,10 +145,7 @@ class Swaggertests(CalmHTTPTestCase):
                     }
                 },
                 '456': {
-                    'description': 'some error',
-                    'schema': {
-                        '$ref': '#/definitions/Error'
-                    }
+                    '$ref': '#/responses/SomeError'
                 }
             },
         }

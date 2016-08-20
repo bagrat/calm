@@ -3,6 +3,7 @@ Here lies the core of Calm.
 """
 import re
 from collections import defaultdict
+from inspect import cleandoc
 
 from tornado.web import Application
 from tornado.websocket import WebSocketHandler
@@ -13,7 +14,7 @@ from calm.service import CalmService
 from calm.handler import (MainHandler, DefaultHandler, SwaggerHandler,
                           HandlerDef)
 from calm.resource import Resource
-from calm import util
+
 
 __all__ = ['CalmApp']
 
@@ -303,7 +304,12 @@ class CalmApp(object):
         """Generate `responses` definitions of swagger.json."""
         defined_errors = ClientError.get_defined_errors()
         return {
-            e.__name__: util.generate_error_definition(e)
+            e.__name__: {
+                'description': cleandoc(e.__doc__),
+                'schema': {
+                    '$ref': '#/definitions/Error'
+                }
+            }
             for e in defined_errors
         }
 

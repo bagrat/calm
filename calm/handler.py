@@ -16,12 +16,12 @@ import datetime
 
 from tornado.web import RequestHandler
 from tornado.web import MissingArgumentError
+
 from untt.util import parse_docstring
 
 from calm.ex import (ServerError, ClientError, BadRequestError,
                      MethodNotAllowedError, NotFoundError, DefinitionError)
 from calm.param import QueryParam, PathParam
-from calm import util
 
 __all__ = ['MainHandler', 'DefaultHandler']
 
@@ -283,17 +283,7 @@ class HandlerDef(object):
             [self.handler.__module__, self.handler.__name__]
         ).replace('.', '_')
 
-        parameters = []
-        # for name in self.path_args:
-        #     parameters.append({
-        #         'name': name,
-        #         'in': 'path',
-        #         'required': True,
-        #         'type': 'string'
-        #         # TODO: add param description
-        #     })
-
-        parameters += [q.generate_swagger() for q in self.path_args]
+        parameters = [q.generate_swagger() for q in self.path_args]
         parameters += [q.generate_swagger() for q in self.query_args]
 
         if self.consumes:
@@ -315,7 +305,9 @@ class HandlerDef(object):
             }
 
         for error in self.errors:
-            responses[str(error.code)] = util.generate_error_definition(error)
+            responses[str(error.code)] = {
+                '$ref': '#/responses/{}'.format(error.__name__)
+            }
 
         opdef = {
             'summary': summary,

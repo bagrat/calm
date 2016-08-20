@@ -7,6 +7,7 @@ class Parameter(object):
     def __init__(self, name, param_type, param_in, default=P.empty):
         super().__init__()
 
+        # TODO: add param description
         self.name = name
         self.param_type = param_type if param_type is not P.empty else str
         try:
