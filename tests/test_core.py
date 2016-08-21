@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from tornado.web import RequestHandler
 
 from calm.testing import CalmHTTPTestCase
@@ -86,10 +88,10 @@ class SomeResource(Resource):
 @app.post('/input/output/validation')
 @produces(SomeResource)
 @consumes(SomeResource)
-def input_output_validation(self, someint=1, somestr='hey'):
+def input_output_validation(self, bad: bool = False):
     return {
-        'someint': someint,
-        'somestr': somestr
+        'someint': 'str' if bad else 123,
+        'somestr': 456 if bad else 'correct'
     }
 
 
@@ -272,13 +274,11 @@ class CoreTests(CalmHTTPTestCase):
                   expected_code=400)
 
         good_data = {
-            'someint': 123,
+            'someint': 456,
             'somestr': 'abc'
         }
 
-        print(input_output_validation.produces)
-        print(input_output_validation.consumes)
         self.post('/input/output/validation',
-                  query_args=bad_data,
+                  query_args={'bad': 'true'},
                   json_body=good_data,
-                  expected_code=500)
+                  expected_code=200)

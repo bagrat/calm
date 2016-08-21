@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 from calm.codec import ArgumentParser
-from calm.ex import DefinitionError
+from calm.ex import DefinitionError, ArgumentParseError
 
 
 class CodecTests(TestCase):
@@ -23,3 +23,10 @@ class CodecTests(TestCase):
         parser.parse(custom_type, 1234)
 
         custom_type.parse.assert_called_once_with(1234)
+
+    def test_bool_type(self):
+        parser = ArgumentParser()
+
+        self.assertTrue(parser.parse(bool, 'yes'))
+        self.assertRaises(ArgumentParseError,
+                          parser.parse, bool, 'womp')

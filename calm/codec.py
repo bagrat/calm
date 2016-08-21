@@ -56,7 +56,8 @@ class ArgumentParser(object):
         super(ArgumentParser, self).__init__()
 
         self._parsers = {
-            int: self.parse_int
+            int: self.parse_int,
+            bool: self.parse_bool
         }
 
     def parse(self, arg_type, value):
@@ -81,4 +82,21 @@ class ArgumentParser(object):
         except ValueError:
             raise ArgumentParseError(
                 "Bad value for integer: {}".format(value)
+            )
+
+    @classmethod
+    def parse_bool(cls, value):
+        """Parses a base 10 string to `int` object."""
+        try:
+            return {
+                'true': True,
+                'false': False,
+                '1': True,
+                '0': False,
+                'yes': True,
+                'no': False
+            }[value.lower()]
+        except KeyError:
+            raise ArgumentParseError(
+                "Bad value for boolean: {}".format(value)
             )
