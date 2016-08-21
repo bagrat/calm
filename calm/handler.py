@@ -147,18 +147,16 @@ class MainHandler(RequestHandler):
         if hasattr(response, '__json__'):
             result = response.__json__()
 
-        if handler_def and handler_def.produces:
-            try:
-                handler_def.produces.validate(result)
-            except ValidationError:
-                self.log.warning(
-                    "Bad output data structure in '{}'".format(handler_def.uri)
-                )
-                # TODO: warn about bad output
-                pass
-        else:
-            # TODO: warn
-            pass
+        if handler_def:
+            if handler_def.produces:
+                try:
+                    handler_def.produces.validate(result)
+                except ValidationError:
+                    self.log.warning("Bad output data structure in '%s'",
+                                     handler_def.uri)
+            else:
+                self.log.warning("'%s' has no return type but returns data.",
+                                 handler_def.uri)
 
         try:
             json_str = json.dumps(result)
