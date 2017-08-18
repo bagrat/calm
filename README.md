@@ -7,6 +7,7 @@
          width=70
          height=70 />
 </a>
+    
 [![PyPI](https://img.shields.io/pypi/v/calm.svg)](https://pypi.python.org/pypi/calm)
 [![Build Status](https://travis-ci.org/n9code/calm.svg?branch=master)](https://travis-ci.org/n9code/calm)
 [![Coverage Status](https://coveralls.io/repos/github/n9code/calm/badge.svg?branch=master)](https://coveralls.io/github/n9code/calm?branch=master)
